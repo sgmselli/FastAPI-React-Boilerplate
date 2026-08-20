@@ -1,0 +1,223 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { Google } from "../../components/Icons/Icons";
+import { registerUser } from "../../api/user";
+import type { UserCreateRequest } from "../../types/user";
+import { Loading } from "../../components/Loading";
+import usePageTitle from "../../hooks/usePageTitle";
+import { useAuth } from "../../contexts/auth";
+
+type RegisterFieldErrors = {
+    email?: string;
+    name?: string;
+    password?: string;
+    confirm_password?: string;
+};
+
+type ApiValidationError = {
+    loc: (string | number)[];
+    msg: string;
+};
+
+export const Register: React.FC = () => {
+    // -----------------------------
+    // Form State
+    // -----------------------------
+    const [name, setName] = useState<string>("");
+    const [email, setEmail] = useState<string>("");
+    const [password, setPassword] = useState<string>("");
+    const [confirmPassword, setConfirmPassword] = useState<string>("");
+
+    const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const [fieldErrors, setFieldErrors] = useState<RegisterFieldErrors>({});
+
+    const { login } = useAuth();
+
+    const navigate = useNavigate();
+
+    const buildUserData = (): UserCreateRequest => {
+        return {
+            name,
+            email,
+            password,
+            confirmPassword
+        };
+    };
+
+    const handleRegister = async () => {
+        setLoading(true);
+        setError(null);
+        setFieldErrors({});
+        try {
+            await registerUser(buildUserData());
+            await login({email, password});
+            navigate("/auth/callback");
+        } catch (err: unknown) {
+            const detail = axios.isAxiosError(err) ? err.response?.data?.detail : undefined;
+
+            // Check if detail is a string (simple error message)
+            if (typeof detail === 'string') {
+                setError(detail);
+            }
+            // Check if detail is an array (field validation errors)
+            else if (Array.isArray(detail)) {
+                const apiErrors: RegisterFieldErrors = {};
+
+                (detail as ApiValidationError[]).forEach((e) => {
+                    const field = e.loc[1] as keyof RegisterFieldErrors;
+                    apiErrors[field] = e.msg;
+                });
+
+                setFieldErrors(apiErrors);
+            } else {
+                setError("Failed to create account.");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // -----------------------------
+    // Handle Google Login
+    // -----------------------------
+    const handleGoogleRegister= async () => {
+        window.location.href = "api/v1/auth/google/login";
+    };
+
+    usePageTitle("Create an account");
+
+    return (
+        <section className="flex flex-col items-center justify-center mt-6">
+            <div className="w-full max-w-lg">
+                <div className="card rounded-lg">
+                    <div className="card-body space-y-6 py-0 md:pt-8 md:pb-12 px-0 text-color">
+                        <div className="flex flex-col items-start gap-1">
+                            <h1 className="text-4xl font-semibold primary-color">Create an account</h1>
+                            <p className="text-lg mt-2 text-gray-500">Create your free account!</p>
+                        </div>
+
+                        {
+                            error && (
+                                <p className="text-error">{error}</p>
+                            )
+                        }
+
+                        <div className="flex flex-col space-y-5">
+
+                            <label className="form-control">
+                                <input
+                                    type="text"
+                                    placeholder="Name"
+                                    className={`input input-lg input-bordered w-full text-sm ${fieldErrors.name ? "input-error" : ""}`}
+                                    name="name"
+                                    autoComplete="name"
+                                    aria-label="Name input"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    required
+                                />
+                                {fieldErrors.name && (
+                                    <p className="text-red-500 text-sm mt-1">{fieldErrors.name}</p>
+                                )}
+                            </label>
+
+                            <label className="form-control">
+                                <input
+                                    type="email"
+                                    placeholder="Email"
+                                    className={`input input-lg input-bordered w-full text-sm ${fieldErrors.email ? "input-error" : ""}`}
+                                    name="email"
+                                    autoComplete="email"
+                                    aria-label="Register email input"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
+                                {fieldErrors.email && (
+                                    <p className="text-red-500 text-sm mt-1">{fieldErrors.email}</p>
+                                )}
+                            </label>
+
+                            <label className="form-control">
+                                <input
+                                    type="password"
+                                    placeholder="Password"
+                                    className={`input input-lg input-bordered w-full text-sm ${fieldErrors.password ? "input-error" : ""}`}
+                                    name="password"
+                                    autoComplete="new-password"
+                                    aria-label="Register password input"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                                {fieldErrors.password && (
+                                    <p className="text-red-500 text-sm mt-1">{fieldErrors.password}</p>
+                                )}
+                            </label>
+
+                            <label className="form-control">
+                                <input
+                                    type="password"
+                                    placeholder="Confirm password"
+                                    className={`input input-lg input-bordered w-full text-sm ${fieldErrors.confirm_password ? "input-error" : ""}`}
+                                    name="confirm_password"
+                                    autoComplete="new-password"
+                                    aria-label="Confirm password input"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    required
+                                />
+                                {fieldErrors.confirm_password && (
+                                    <p className="text-red-500 text-sm mt-1">{fieldErrors.confirm_password}</p>
+                                )}
+                            </label>
+
+                            <div className="card-actions pt-4 flex flex-col gap-4">
+                                <button
+                                    type="submit"
+                                    onClick={handleRegister}
+                                    disabled={loading}
+                                    className="btn btn-lg text-[15px] fastapi-color-bg surface-color font-medium rounded-lg btn-block"
+                                    aria-label="Create account button"
+                                >
+                                    {
+                                        loading ?
+                                            <div>
+                                                <Loading size="sm" />
+                                            </div>
+                                            :
+                                            <p>Create account</p>
+                                    }
+                                </button>
+
+                                <div className="h-px divider before:bg-gray-300 after:bg-gray-300 text-gray-400">
+                                    OR
+                                </div>
+
+                                <button
+                                    onClick={handleGoogleRegister}
+                                    disabled={loading}
+                                    className="btn btn-lg text-[15px] surface-color-bg text-color font-medium rounded-lg border-black btn-block flex items-center justify-center gap-4"
+                                    aria-label="Sign up with Google button"
+                                >
+                                    <Google />
+                                    Sign up with Google
+                                </button>
+                            </div>
+
+                            <p className="mt-2 text-[16px] text-gray-700">
+                                Have an account?{" "}
+                                <span className="underline hover:text-blue-400">
+                                    <Link to="/login">Sign in</Link>
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+};

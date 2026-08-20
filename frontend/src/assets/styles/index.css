@@ -1,0 +1,70 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: light --default;
+}
+
+.primary-color {
+  color: #042C3C;
+}
+
+.primary-color-bg {
+  background-color: #042C3C;
+}
+
+.darker-primary-color {
+  color: #032735
+}
+
+.darker-primary-color-bg {
+  background-color: #032735
+}
+
+.secondary-color {
+  color: #F59E0B;
+}
+
+.secondary-color-darker {
+  color: #e4950b;
+}
+
+.secondary-color-bg {
+  background-color: #F59E0B;
+}
+
+.fastapi-color {
+  color: #05998B;
+}
+
+.fastapi-color-bg {
+  background-color: #05998B;
+}
+
+.surface-color {
+  color: #FFFFFF;
+}
+
+.surface-color-bg {
+  background-color: #FFFFFF;
+}
+
+.text-color {
+  color: #111827 
+}
+
+.folk-genre-color {
+  color: #5A4D34;
+}
+
+.folk-genre-color-bg {
+  background-color: #F5ECD0;
+}
+
+.pop-genre-color-bg {
+  background-color: #1F1F1F;
+}
+
+.react-pdf__Page__canvas {
+    margin: 0 auto;
+    width: 100% !important;
+    height: 100% !important;
+}

@@ -1,0 +1,69 @@
+services:
+
+  proxy:
+    container_name: proxy
+    image: superguitartab.azurecr.io/app:proxy-latest
+    volumes:
+      - ./certbot/www/:/var/www/certbot/:ro
+      - ./certbot/conf/:/etc/letsencrypt/:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - client
+      - tabs-api
+    networks:
+      - frontend
+      - backend
+    
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certbot/www/:/var/www/certbot/:rw
+      - ./certbot/conf/:/etc/letsencrypt/:rw
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+  client:
+    container_name: client
+    image: superguitartab.azurecr.io/app:client-latest
+    expose:
+      - "3000"
+    networks:
+      - frontend
+
+  tabs-api:
+    container_name: tabs-api
+    image: superguitartab.azurecr.io/app:tabs-api-latest
+    env_file:
+      - .env.tabs-api
+    expose:
+      - "8000"
+    networks:
+      - backend
+
+  worker:
+    image: superguitartab.azurecr.io/app:tabs-api-latest
+    env_file:
+      - .env.tabs-api
+    command: celery -A app.celery.task_queue.celery_task_queue worker --loglevel=info
+    depends_on:
+      - redis
+    networks:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    expose:
+      - "6379"
+    networks:
+      - backend
+
+volumes:
+  letsencrypt:
+  letsencrypt-www:
+
+networks:
+  frontend:
+    internal: false
+  backend:
+    driver: bridge

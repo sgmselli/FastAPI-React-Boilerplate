@@ -1,0 +1,26 @@
+[[redirects]]
+  from = "/api/*"
+  to = "https://api.fastapireactboilerplate.com/api/:splat"
+  status = 200
+  force = true
+
+# SPA fallback - client-side routes (react-router-dom) must all resolve to
+# index.html rather than 404ing on refresh/deep link.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Vite fingerprints everything under dist/assets, so it's safe to cache
+# those forever
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# index.html isn't fingerprinted and references the hashed asset filenames,
+# so it must always be revalidated
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
