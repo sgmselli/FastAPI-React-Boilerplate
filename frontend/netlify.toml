@@ -1,6 +1,6 @@
 [[redirects]]
   from = "/api/*"
-  to = "http://206.189.28.135:8000/api/:splat"
+  to = "https://api.fastapireactboilerplate.com/api/:splat"
   status = 200
   force = true
 
