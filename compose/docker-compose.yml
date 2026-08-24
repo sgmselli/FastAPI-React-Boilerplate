@@ -7,7 +7,18 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - API_URL=http://backend:8000
+      - API_URL=http://reverse_proxy:80
+    depends_on:
+      - reverse_proxy
+
+  reverse_proxy:
+    container_name: reverse_proxy
+    build:
+      context: ../reverse_proxy/development
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
 
   backend:
     container_name: backend
@@ -16,7 +27,8 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     container_name: db
@@ -35,18 +47,30 @@ services:
       - POSTGRES_USER=dbadmin
       - POSTGRES_PASSWORD=password
       - POSTGRES_HOST=db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   worker:
     build:
       context: ../backend
     command: celery -A app.celery.task_queue.celery_task_queue worker --loglevel=info
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
 
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+        test: ["CMD", "redis-cli", "ping"]
+        interval: 5s
+        timeout: 3s
+        retries: 10
 
 volumes:
   db_data:

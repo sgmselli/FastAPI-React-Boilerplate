@@ -1,8 +1,7 @@
 services:
-
-  proxy:
-    container_name: proxy
-    image: superguitartab.azurecr.io/app:proxy-latest
+  reverse-proxy:
+    container_name: reverse-proxy
+    image: registry.digitalocean.com/fastapi-react-cr/app:reverse-proxy-latest
     volumes:
       - ./certbot/www/:/var/www/certbot/:ro
       - ./certbot/conf/:/etc/letsencrypt/:ro
@@ -10,10 +9,8 @@ services:
       - "80:80"
       - "443:443"
     depends_on:
-      - client
-      - tabs-api
+      - backend
     networks:
-      - frontend
       - backend
     
   certbot:
@@ -23,31 +20,46 @@ services:
       - ./certbot/conf/:/etc/letsencrypt/:rw
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
-  client:
-    container_name: client
-    image: superguitartab.azurecr.io/app:client-latest
-    expose:
-      - "3000"
-    networks:
-      - frontend
-
-  tabs-api:
-    container_name: tabs-api
-    image: superguitartab.azurecr.io/app:tabs-api-latest
+  backend:
+    container_name: backend
+    image: registry.digitalocean.com/fastapi-react-cr/app:backend-latest
     env_file:
-      - .env.tabs-api
+      - .env.backend
     expose:
       - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - backend
 
-  worker:
-    image: superguitartab.azurecr.io/app:tabs-api-latest
+  db:
+    container_name: db
+    image: postgres:18
+    volumes:
+      - /var/lib/postgresql
+    ports:
+      - "5432:5432"
     env_file:
-      - .env.tabs-api
+      - .env.db
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  worker:
+    container_name: worker
+    image: registry.digitalocean.com/fastapi-react-cr/app:backend-latest
+    env_file:
+      - .env.backend
     command: celery -A app.celery.task_queue.celery_task_queue worker --loglevel=info
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     networks:
       - backend
 
@@ -57,13 +69,17 @@ services:
       - "6379"
     networks:
       - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
 volumes:
+  db_data:
   letsencrypt:
   letsencrypt-www:
 
 networks:
-  frontend:
-    internal: false
   backend:
     driver: bridge
