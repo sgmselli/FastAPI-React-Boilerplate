@@ -1,0 +1,42 @@
+name: Deploy server to droplet
+
+on:
+  workflow_call:
+    inputs:
+      image_tag:
+        description: Full image ref to deploy (registry/repo:sha)
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy server
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ansible python3-boto3 sshpass
+          ansible-galaxy collection install community.docker
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.DIGITALOCEAN_SSH_KEY }}
+
+      - name: Add droplet to known_hosts
+        run: ssh-keyscan -H ${{ vars.DIGITALOCEAN_HOST_1 }} >> ~/.ssh/known_hosts
+
+      - name: Deploy
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          ansible-playbook \
+            -i ./infrastructure/ansible/hosts.ini \
+            ./infrastructure/ansible/playbooks/deploy.yml \
+            -e "docr_registry=${{ vars.DOCR_REGISTRY }}" \
+            -e "image_tag=${{ inputs.image_tag }}"
