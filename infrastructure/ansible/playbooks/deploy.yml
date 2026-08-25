@@ -18,7 +18,7 @@
       community.docker.docker_login:
         registry_url: registry.digitalocean.com
         username: doctl
-        password: "{{ lookup('env','DO_API_TOKEN') }}"
+        password: "{{ lookup('env','DIGITALOCEAN_ACCESS_TOKEN') }}"
 
     - name: Pull and start containers
       community.docker.docker_compose_v2:
