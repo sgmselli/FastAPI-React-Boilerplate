@@ -1,0 +1,33 @@
+name: Test frontend
+
+on:
+  workflow_call:
+
+jobs:
+  test:
+    name: Frontend tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-frontend
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Typecheck
+        working-directory: frontend
+        run: npx tsc -b --noEmit
+
+      - name: Unit tests
+        working-directory: frontend
+        run: npm test
+
+      # Proves the production build actually succeeds (tsc -b && vite build) -
+      # this is also the artifact _deploy-netlify.yml ships, so a break here
+      # is a break there.
+      - name: Build
+        working-directory: frontend
+        run: npm run build

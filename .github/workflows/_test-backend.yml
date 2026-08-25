@@ -1,0 +1,57 @@
+name: Test backend
+
+on:
+  workflow_call:
+
+jobs:
+  test:
+    name: Backend tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: testdb
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    env:
+      APP_ENV: TEST
+      DATABASE_HOST: localhost
+      DATABASE_NAME: testdb
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: password
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-backend
+
+      # No lint/type tooling is configured yet (no ruff/mypy in
+      # requirements.txt). Add them and uncomment when ready:
+      # - name: Lint
+      #   working-directory: backend
+      #   run: ruff check .
+
+      - name: Run migrations
+        working-directory: backend
+        run: alembic -c app/db/migrations/alembic.ini upgrade head
+
+      - name: Run tests
+        working-directory: backend
+        run: pytest

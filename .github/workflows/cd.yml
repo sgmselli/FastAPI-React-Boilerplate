@@ -42,19 +42,21 @@ jobs:
             frontend:
               - 'frontend/**'
 
-  # test-backend:
-  #   needs: changes
-  #   if: needs.changes.outputs.backend == 'true' || github.event.inputs.deploy_backend == 'true'
-  #   uses: ./.github/workflows/_test-backend.yml
+  test-backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || github.event.inputs.deploy_backend == 'true'
+    uses: ./.github/workflows/_test-backend.yml
 
-  # test-frontend:
-  #   needs: changes
-  #   if: needs.changes.outputs.frontend == 'true' || github.event.inputs.deploy_frontend == 'true'
-  #   uses: ./.github/workflows/_test-frontend.yml
+  test-frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || github.event.inputs.deploy_frontend == 'true'
+    uses: ./.github/workflows/_test-frontend.yml
 
   build-push:
-    needs: [changes]
-    # if: needs.changes.outputs.backend == 'true' || github.event.inputs.deploy_backend == 'true'
+    needs: [changes, test-backend]
+    if: |
+      (needs.changes.outputs.backend == 'true' || github.event.inputs.deploy_backend == 'true') &&
+      needs.test-backend.result == 'success'
     uses: ./.github/workflows/_build-push.yml
     secrets: inherit
 
@@ -66,19 +68,11 @@ jobs:
       image_tag: ${{ needs.build-push.outputs.image_tag }}
     secrets: inherit
 
-  # `if: always() && result != 'failure'` is what lets this run when
-  # deploy-backend was *skipped* (frontend-only change) while still
-  # blocking it when deploy-backend actively failed.
   deploy-frontend:
-    needs: [changes, deploy-backend]
-    # if: |
-    #   always() &&
-    #   needs.deploy-backend.result != 'failure' &&
-    #   (needs.changes.outputs.frontend == 'true' || github.event.inputs.deploy_frontend == 'true')
+    needs: [changes, test-frontend, deploy-backend]
+    if: |
+      always() &&
+      needs.deploy-backend.result != 'failure' &&
+      (needs.changes.outputs.frontend == 'true' || github.event.inputs.deploy_frontend == 'true')
     uses: ./.github/workflows/_deploy-netlify.yml
     secrets: inherit
-
-# E2E tests deliberately never run against a deployed environment - they only
-# run against the ephemeral compose stack ci-e2e.yml spins up on a pull request
-# (see .github/workflows/_e2e.yml). Running them post-deploy would mean writing
-# real registrations into the production database on every release.
