@@ -33,7 +33,7 @@ def store_access_token(response: Response, access_token: str) -> None:
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False,
+        secure=True,
         samesite='lax',
         max_age=expire_time_from_minutes_to_seconds
     )
@@ -44,7 +44,7 @@ def store_refresh_token(response: Response, refresh_token: str) -> None:
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=False,
+        secure=True,
         samesite='lax',
         max_age=expire_time_from_days_to_seconds
     )
