@@ -1,0 +1,45 @@
+---
+- name: create environment variable files and populate variables
+  hosts: vm01
+  become: yes
+  tasks:
+
+    - name: Ensure project directory exists
+      file:
+        path: /root
+        state: directory
+        mode: '0755'
+
+    - name: Create env file for backend environment variables
+      copy:
+        dest: /root/.env.backend
+        content: |
+          APP_ENV=PRODUCTION
+          DATABASE_NAME={{ database_name }}
+          DATABASE_USER={{ database_user }}
+          DATABASE_PASSWORD={{ database_password }}
+          DATABASE_HOST={{ database_host }}
+          BUCKET_SECRET_KEY={{ bucket_secret_key }}
+          BUCKET_ACCESS_KEY_ID={{ bucket_access_key_id }}
+          BUCKET_NAME={{ bucket_name }}
+          BUCKET_REGION={{ bucket_region }}
+          BUCKET_ENDPOINT_URL={{ bucket_endpoint_url }}
+          ACCESS_SECRET_KEY={{ access_secret_key }}
+          REFRESH_SECRET_KEY={{ refresh_secret_key }}
+          SESSION_SECRET_KEY={{ session_secret_key }}
+          GOOGLE_CLIENT_SECRET={{ google_client_secret }}
+          GOOGLE_CLIENT_ID={{ google_client_id }}
+          REDIS_HOST={{ redis_host }}
+          REDIS_PORT={{ redis_port }}
+          REDIS_DB={{ redis_db }}
+          BREVO_API_KEY={{ brevo_api_key }}
+          FROM_EMAIL={{ from_email }}
+
+    - name: Create env file for database environment variables
+      copy:
+        dest: /root/.env.db
+        content: |
+          POSTGRES_DB={{ database_name }}
+          POSTGRES_USER={{ database_user }}
+          POSTGRES_PASSWORD={{ database_password }}
+          POSTGRES_HOST={{ database_host }}

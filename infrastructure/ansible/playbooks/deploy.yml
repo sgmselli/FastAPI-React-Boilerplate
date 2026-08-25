@@ -1,0 +1,26 @@
+---
+- name: pull images from registry and run docker compose
+  hosts: vm01
+  become: yes
+  tasks:
+    - name: Ensure project directory exists
+      file:
+        path: /root
+        state: directory
+        mode: '0755'
+
+    - name: Copy docker-compose file
+      copy:
+        src: ../../../compose/docker-compose.production.yml
+        dest: /root/docker-compose.yml
+    
+    - name: Log in to DigitalOcean registry
+      community.docker.docker_login:
+        registry_url: registry.digitalocean.com
+        username: doctl
+        password: "{{ lookup('env','DO_API_TOKEN') }}"
+
+    - name: Pull and start containers
+      community.docker.docker_compose_v2:
+        project_src: /root/
+        pull: always
