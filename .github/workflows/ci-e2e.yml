@@ -1,0 +1,33 @@
+name: CI E2E
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            relevant:
+              - 'backend/**'
+              - 'frontend/**'
+              - 'compose/**'
+              - 'reverse_proxy/**'
+              - '.github/workflows/_e2e.yml'
+              - '.github/workflows/ci-e2e.yml'
+
+  e2e:
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
+    uses: ./.github/workflows/_e2e.yml

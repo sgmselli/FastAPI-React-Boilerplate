@@ -1,0 +1,31 @@
+name: CI backend
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/_test-backend.yml'
+              - '.github/workflows/ci-backend.yml'
+              - '.github/actions/setup-backend/**'
+
+  test:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    uses: ./.github/workflows/_test-backend.yml
