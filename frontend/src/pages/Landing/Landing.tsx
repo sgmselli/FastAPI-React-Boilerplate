@@ -47,7 +47,7 @@ const sections = [
 const Landing: React.FC = () => {
 
   return (
-      <div className="mt-10 flex flex-col items-center text-center px-4">
+      <div className="mt-10 mb-10 flex flex-col items-center text-center px-4">
           <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
               Full stack FastAPI and React application
           </h1>
