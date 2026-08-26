@@ -1,16 +1,11 @@
 import React from 'react'
-import { UserPlus, Rocket, KeyRound, Mail, TestTube, Scale, BookOpen, FileQuestion } from 'lucide-react'
+import { UserPlus, Rocket, Mail, TestTube, Scale, BookOpen, FileQuestion } from 'lucide-react'
 
 const sections = [
     {
         title: 'Authentication',
         description: 'Login and registration with secure, session-based authentication and authentication-required pages.',
         icon: UserPlus,
-    },
-    {
-        title: 'Password Recovery',
-        description: 'Securely reset a forgotten password via an emailed reset link.',
-        icon: KeyRound,
     },
     {
         title: 'Email Delivery',
@@ -47,7 +42,7 @@ const sections = [
 const Landing: React.FC = () => {
 
   return (
-      <div className="mt-10 flex flex-col items-center text-center px-4">
+      <div className="mt-10 mb-10 flex flex-col items-center text-center px-4">
           <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
               Full stack FastAPI and React application
           </h1>

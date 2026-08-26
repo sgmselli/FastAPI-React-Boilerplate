@@ -26,6 +26,8 @@ services:
       context: ../backend
     ports:
       - "8000:8000"
+    environment:
+      - APP_ENV
     depends_on:
       db:
         condition: service_healthy
@@ -58,6 +60,8 @@ services:
     build:
       context: ../backend
     command: celery -A app.celery.task_queue.celery_task_queue worker --loglevel=info
+    environment:
+      - APP_ENV
     depends_on:
       redis:
         condition: service_healthy

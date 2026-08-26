@@ -48,6 +48,7 @@ class S3Client:
                     "CacheControl": "public, max-age=31536000, immutable",
                 }
             )
+            
         except Exception as e:
             Logger.log(LogLevel.ERROR, str(e))
             raise S3ClientException()
