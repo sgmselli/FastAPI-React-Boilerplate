@@ -36,14 +36,14 @@ services:
     container_name: db
     image: postgres:18
     volumes:
-      - /var/lib/postgresql
+      # postgres:18 declares VOLUME /var/lib/postgresql (PGDATA is
+      # /var/lib/postgresql/18/docker) - mount the parent, not data/ as on 17.
+      - db_data:/var/lib/postgresql
       # Creates boilerplatetestdb + testdbadmin on first init. Only runs when
       # the data directory is empty - see documentation/automated-testing.md.
       - ./initdb:/docker-entrypoint-initdb.d:ro
     ports:
       - "5432:5432"
-    expose:
-      - "5432"
     environment:
       - POSTGRES_DB=boilerplatedb
       - POSTGRES_USER=dbadmin
