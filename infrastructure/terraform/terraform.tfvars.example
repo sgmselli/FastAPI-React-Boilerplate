@@ -1,0 +1,22 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+
+# DigitalOcean personal access token, read/write scope.
+# Create at: https://cloud.digitalocean.com/account/api/tokens
+do_token = ""
+
+# Must be globally unique across all of DigitalOcean.
+registry_name = ""
+
+# Contents of your public key, e.g. `cat ~/.ssh/id_ed25519.pub`
+ssh_public_key = "ssh-ed25519 AAAA... you@example.com"
+
+# Optional overrides - defaults shown.
+# project_name    = "fastapi-react"
+# environment     = "prod"
+# region          = "lon1"
+# registry_region = "ams3"
+# droplet_size    = "s-2vcpu-2gb"
+# droplet_backups = false
+
+# Narrow SSH to your own address if it is static.
+# ssh_allowed_cidrs = ["203.0.113.4/32"]
