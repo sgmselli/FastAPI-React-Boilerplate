@@ -37,6 +37,4 @@ jobs:
         run: |
           ansible-playbook \
             -i ./infrastructure/ansible/hosts.ini \
-            ./infrastructure/ansible/playbooks/deploy.yml \
-            -e "docr_registry=${{ vars.DOCR_REGISTRY }}" \
-            -e "image_tag=${{ inputs.image_tag }}"
+            ./infrastructure/ansible/playbooks/deploy.yml
