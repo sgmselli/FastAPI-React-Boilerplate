@@ -7,6 +7,8 @@ from app.schema.user import UserResponse, UserCreate
 import app.services.user_services as user_services
 from app.models.user import User
 from app.auth.current_user import get_current_user_or_raise_http_error
+from app.celery.tasks.email_tasks import task_send_welcome_email
+from app.utils.logging import Logger, LogLevel
 
 router = APIRouter()
 
@@ -20,4 +22,10 @@ async def register_user(user_create: UserCreate, session: AsyncSession = Depends
         user = await user_services.create_user_with_password(user_create, session)
     except UserAlreadyExists as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+
+    try:
+        task_send_welcome_email.delay(user.email, user.name)
+    except Exception as e:
+        Logger.log(LogLevel.ERROR, f"Failed to queue welcome email for '{user.email}': {e}")
+
     return user
