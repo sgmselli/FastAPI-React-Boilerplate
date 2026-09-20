@@ -10,7 +10,7 @@ This page only creates those credentials. Actually building the infrastructure c
 2. Verify your email, then add a payment method. **This is not optional** — Terraform can authenticate without billing set up, but every `create` call fails until a valid card or PayPal account is on file.
 3. New accounts sometimes land in a manual review queue for a few hours. If `terraform apply` returns `403` on an account that looks fine, check for a banner in the control panel before debugging anything else.
 
-> **This costs money.** The defaults in [`variables.tf`](../../infrastructure/terraform/variables.tf) provision a `s-1vcpu-512mb-10gb` droplet, a reserved IP, and a `basic`-tier container registry. These are the most basic costs which should be around 8$/month. Look on the Digital Ocean console for how much these exactly cost.
+> **This costs money.** The defaults in [`variables.tf`](../../infrastructure/terraform/variables.tf) provision a `s-1vcpu-1gb` droplet, a reserved IP, and a `basic`-tier container registry. Look on the Digital Ocean console for how much these exactly cost.
 
 ## 2. Create a personal access token
 
