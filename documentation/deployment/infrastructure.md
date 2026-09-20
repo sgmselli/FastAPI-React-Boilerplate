@@ -51,7 +51,7 @@ The defaults worth thinking about before the first apply, since changing some of
 | Variable | Default | Notes |
 |---|---|---|
 | `region` | `lon1` | Put it near your users |
-| `droplet_size` | `s-1vcpu-512mb-10gb` | The cheapest option. It runs the stack, but 512MB is shared by FastAPI, Celery, Postgres, Redis and Nginx — size up if you see the worker getting OOM-killed |
+| `droplet_size` | `s-1vcpu-1gb` | A cheap option. It runs the stack, but 1GB is shared by FastAPI, Celery, Postgres, Redis and Nginx — size up if you see the worker getting OOM-killed |
 | `registry_region` | `ams3` | **Must be different from `region` if you use `lon1`** — DOCR isn't available there. The validation in [`variables.tf`](../../infrastructure/terraform/variables.tf) lists the regions that work |
 | `registry_tier` | `basic` | `starter` is free but caps at one repository, and the app pushes two images |
 | `ssh_allowed_cidrs` | open | Narrowing this locks GitHub Actions out of the droplet — see [DigitalOcean Account Setup](digital-ocean-account-setup.md#things-worth-knowing) |

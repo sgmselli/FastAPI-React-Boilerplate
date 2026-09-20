@@ -127,7 +127,7 @@ Note this one is **synchronous** while `upload_fileobj` is `async`, so it's call
 
 **The upload blocks the event loop.** `upload_fileobj` is declared `async` and does `await file.read()`, but `self.s3.upload_fileobj(...)` is boto3's synchronous call — it holds the worker for the whole transfer. The `async` keyword makes it look safe when it isn't. For large files, run it in a threadpool with `run_in_threadpool`, or hand it to Celery the way email is handled.
 
-**Whole files are buffered in memory.** `await file.read()` followed by `BytesIO(...)` means a 500MB upload costs 500MB of RAM, on a droplet whose default size is 512MB total. Passing `file.file` straight to boto3 would stream it instead.
+**Whole files are buffered in memory.** `await file.read()` followed by `BytesIO(...)` means a 500MB upload costs 500MB of RAM, on a droplet whose default size is 1GB total. Passing `file.file` straight to boto3 would stream it instead.
 
 **Uploads go through your server.** The browser sends the file to FastAPI, which forwards it to the bucket — so every byte crosses the droplet twice and counts against its bandwidth. The alternative is a presigned **PUT** URL, letting the browser upload directly. `generate_presigned_url` is hardcoded to `get_object`, so that would need a new method.
 
