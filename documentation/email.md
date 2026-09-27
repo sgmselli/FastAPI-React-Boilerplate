@@ -15,7 +15,7 @@ Four layers, each replaceable:
 
 The split matters most at the top and bottom. Routers call `send_welcome_email` and know nothing about Brevo; `EmailService` takes its client by constructor injection, so tests pass a fake and swapping providers means writing one new `EmailClient` subclass and changing a single line.
 
-**Emails are templates, not bodies.** Nothing in this codebase contains email copy or HTML. `send_email` passes a Brevo `template_id` and a `params` dictionary, and Brevo renders the content it holds. Changing wording is a Brevo dashboard edit with no deploy.
+**Emails are templates, not bodies.** No email copy or HTML is read at runtime. `send_email` passes a Brevo `template_id` and a `params` dictionary, and Brevo renders the content it holds. Changing wording is a Brevo dashboard edit with no deploy. Reference copies of the markup live in [`documentation/email-templates/`](email-templates/) for review and history — see [Create the templates](#2-create-the-templates).
 
 ## Why Celery
 
@@ -29,13 +29,36 @@ Handing it to Celery means the route returns immediately and the send is retried
 2. **Senders, Domains & Dedicated IPs** → add and verify the address you'll send from. Brevo rejects sends from unverified senders, so this has to happen before anything works.
 3. For production, verify the whole **domain** and add the DKIM and SPF records Brevo gives you to your DNS. Without them, mail lands in spam.
 4. **SMTP & API** → **API Keys** → **Generate a new API key**. Copy it — it's shown once.
+5. **Turn IP whitelisting off.** Under **SMTP & API** → **Authorised IPs**, make sure the restriction is disabled. When it's on, Brevo rejects API calls from any address not on the list, so sends fail with a 401 from anywhere the list doesn't cover — your laptop, CI, and the droplet all have different addresses, and a droplet rebuild changes its IP again. The symptom is confusing: the key is valid, the template is fine, and every send still fails. If you'd rather keep the restriction on, every one of those addresses has to be listed and kept up to date.
 
-## 2. Create a template
+## 2. Create the templates
 
-1. **Campaigns** → **Templates** → **New template**, and design it.
-2. Reference variables with `{{ params.name }}` — the `params` prefix is required, and matches the `data` dict passed to `send_email`.
-3. **Activate** the template. Inactive templates fail at send time.
-4. Note the **template ID** from the template list. It's an integer.
+The HTML for each template is kept in [`documentation/email-templates/`](email-templates/):
+
+| Template | File | Variables |
+|---|---|---|
+| Welcome | [`welcome.html`](email-templates/welcome.html) | `name` |
+| Password reset | [`password-reset.html`](email-templates/password-reset.html) | `name`, `reset_url` |
+| Password reset confirmation | [`password-reset-confirmation.html`](email-templates/password-reset-confirmation.html) | `name` |
+
+> **The repository copies are for tracking only.** Brevo is the source of truth — the live template is whatever the dashboard holds, and nothing in this codebase reads these files at runtime. They exist so the markup has a history and can be reviewed in a pull request. Edit the real template in the Brevo UI; if you change the HTML meaningfully, paste it back here so the two don't drift.
+
+For each one:
+
+1. **Campaigns** → **Templates** → **New template**.
+2. Switch the editor to raw HTML and paste the file's contents in.
+3. Reference variables with `{{ params.name }}` — the `params` prefix is required, and matches the `data` dict passed to `send_email`. The templates already use the right names.
+4. Set the subject line in Brevo; it isn't part of the HTML.
+5. **Activate** the template. Inactive templates fail at send time.
+6. Note the **template ID** from the template list. It's an integer.
+
+Two things to change before sending for real: the brand name in the header, and the placeholder `https://example.com/login` button in the welcome template — that email receives no URL variable, so the link is hardcoded.
+
+### Turn click tracking off on the password reset template
+
+Brevo rewrites links in tracked templates to point at a redirect on its own domain. For the reset email that breaks the feature in two ways: the single-use token passes through and is logged on Brevo's servers, and any corporate mail scanner that pre-fetches links will **redeem the token before the user ever clicks it**.
+
+The symptom is users reporting that reset links say "invalid or expired" the first time they're opened. Disable click tracking for that template specifically.
 
 ## 3. Configure
 
@@ -48,7 +71,7 @@ Locally these go in `backend/.env`; in production they're `brevo_api_key` and `f
 
 Both default to `None` in [`base.py`](../backend/app/core/settings/base.py), so the app boots fine without them and only fails when a send is attempted.
 
-## 4. Set your template ID
+## 4. Set your template IDs
 
 [`email_templates.py`](../backend/app/enums/email_templates.py) maps a name to each Brevo template:
 
@@ -56,12 +79,16 @@ Both default to `None` in [`base.py`](../backend/app/core/settings/base.py), so 
 from enum import Enum
 
 class EmailTemplatesId(Enum):
-    WELCOME = 123
+    WELCOME = 3
+    PASSWORD_RESET = 2
+    PASSWORD_RESET_CONFIRMATION = 4
 ```
 
-`123` is a placeholder — replace it with the real ID from step 2. The value must be an integer, since it's passed straight through to Brevo's `template_id` field.
+These are the IDs from one Brevo account — replace each with the ID your own account assigned in step 2. The values must be integers, since they're passed straight through to Brevo's `template_id` field.
 
 Add a member here for each new template rather than passing raw IDs around, so the mapping between a number in the Brevo dashboard and what it's for lives in one place.
+
+> IDs are per-account, so they're the one thing that can't be shared between environments. A separate Brevo account for staging would need different numbers, which today means a code change — moving them into settings is the fix if that ever matters.
 
 That's the only application change needed — everything below is already wired up.
 
@@ -82,6 +109,16 @@ Registration is the one flow that sends email today, and it's a useful model for
 The `.delay()` call is wrapped in a `try`/`except` that logs and continues. The user row is already committed by that point, so a Redis outage should cost a welcome email — not turn a successful registration into a 500. The trade-off is that a dropped email is invisible apart from the log line.
 
 **Adding another email** means a template in Brevo, a member on `EmailTemplatesId`, a method on `EmailService`, a task in `email_tasks.py`, and a `.delay()` call at the right moment. Only the last two touch anything outside the email layer.
+
+## The two password reset emails
+
+Password reset follows the same path, and sends twice.
+
+**The link.** `POST /api/v1/auth/password-reset/request` queues `task_send_password_reset_email` with the recipient, their name, and a fully built URL. The router never sends a bare token — [`PasswordResetTokenService.get_reset_url`](../backend/app/services/password_reset_token_services.py) assembles `{frontend_url}/password-reset#token=...`, so the route structure lives in one place and the token sits in the URL fragment, where it never reaches a server and can't land in an access log.
+
+The email is queued whether or not the address has an account, and the API returns the same response either way — anything else would let someone check which addresses are registered.
+
+**The confirmation.** `POST /api/v1/auth/password-reset/confirm` queues `task_send_password_reset_confirmation_email` after the password changes. It carries no link, deliberately: it's sent after a possible account takeover, so a button to click is exactly what an attacker would want to imitate. Its job is to be the tripwire that tells someone their password changed when they didn't change it.
 
 ## Testing locally
 
