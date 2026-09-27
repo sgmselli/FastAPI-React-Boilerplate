@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from jose import JWTError, jwt as jose_jwt
@@ -12,8 +12,10 @@ from app.auth.jwt import (
     store_refresh_token,
     delete_access_token,
     delete_refresh_token,
+    is_token_issued_before_password_update,
 )
 from app.core.config import settings
+from app.models.user import User
 
 
 class TestAccessToken:
@@ -107,3 +109,33 @@ class TestCookies:
         response = FakeResponse()
         delete_refresh_token(response)
         assert response.delete_calls[0]["key"] == "refresh_token"
+
+class TestIsTokenIssuedBeforePasswordUpdate:
+    def test_token_issued_after_the_password_change_is_accepted(self):
+        password_updated_at = datetime.now(timezone.utc) - timedelta(hours=1)
+        user = User(password_updated_at=password_updated_at)
+        payload = {"iat": int(datetime.now(timezone.utc).timestamp())}
+
+        assert is_token_issued_before_password_update(payload, user) is False
+
+    def test_token_issued_before_the_password_change_is_rejected(self):
+        # The point of the whole password_updated_at field: a session an
+        # attacker already holds must not survive the victim resetting.
+        now = datetime.now(timezone.utc)
+        user = User(password_updated_at=now)
+        payload = {"iat": int((now - timedelta(hours=1)).timestamp())}
+
+        assert is_token_issued_before_password_update(payload, user) is True
+
+    def test_token_without_an_iat_claim_is_rejected(self):
+        # Tokens minted before iat was added carry no issue time, so they
+        # cannot be proven fresh.
+        user = User(password_updated_at=datetime.now(timezone.utc))
+
+        assert is_token_issued_before_password_update({}, user) is True
+
+    def test_real_access_token_is_accepted_for_an_older_password(self):
+        user = User(password_updated_at=datetime.now(timezone.utc) - timedelta(days=1))
+        payload = decode_access_token(create_access_token({"sub": "1"}))
+
+        assert is_token_issued_before_password_update(payload, user) is False

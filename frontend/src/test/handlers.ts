@@ -24,4 +24,17 @@ export const handlers = [
   http.post(`${API}/auth/refresh`, () => HttpResponse.json({})),
 
   http.post(`${API}/user/register`, () => HttpResponse.json(testUser, { status: 201 })),
+
+  http.post(`${API}/auth/password-reset/request`, () =>
+    HttpResponse.json(
+      { message: "If an account exists for that email, we've sent a password reset link." },
+      { status: 202 },
+    ),
+  ),
+
+  http.post(`${API}/auth/password-reset/validate`, () => HttpResponse.json({ valid: true })),
+
+  http.post(`${API}/auth/password-reset/confirm`, () =>
+    HttpResponse.json({ message: 'Your password has been reset.' }),
+  ),
 ]

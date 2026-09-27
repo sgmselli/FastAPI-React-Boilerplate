@@ -120,6 +120,12 @@ export const Login: React.FC = () => {
                             </div>
                             </label>
 
+                            <p className="text-[16px] text-gray-700">
+                                <span className="underline hover:text-blue-400">
+                                    <Link to="/forgot-password">Forgot your password?</Link>
+                                </span>
+                            </p>
+
                             <div className="card-actions pt-4 flex flex-col gap-4">
                                 <button
                                     type="submit"

@@ -6,11 +6,11 @@ from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
-from app.exceptions.user import UserEmailDoesNotExist
+from app.exceptions.user import UserEmailDoesNotExist, UserIdDoesNotExist
 from app.schema.user import UserResponse
-from app.services.user_services import get_user_by_email
+from app.services.user_services import get_user_by_email, get_user_by_id
 from app.auth.jwt import create_access_token, create_refresh_token, store_tokens, decode_refresh_token, \
-    store_access_token, delete_tokens
+    store_access_token, delete_tokens, is_token_issued_before_password_update
 from app.auth.password import verify_password
 from app.utils.logging import Logger, LogLevel
 
@@ -47,7 +47,11 @@ async def login(
     return UserResponse.model_validate(user)
 
 @router.post('/refresh', status_code=status.HTTP_200_OK)
-async def refresh_auth_tokens(response: Response, refresh_token: str = Cookie(None)):
+async def refresh_auth_tokens(
+    response: Response,
+    refresh_token: str = Cookie(None),
+    session: AsyncSession = Depends(get_session)
+):
     if refresh_token is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You must be authorized to access.", headers={"WWW-Authenticate": "Bearer"})
 
@@ -58,8 +62,21 @@ async def refresh_auth_tokens(response: Response, refresh_token: str = Cookie(No
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You must be authorized to access.", headers={"WWW-Authenticate": "Bearer"})
 
     sub = decoded.get("sub")
+    if sub is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You must be authorized to access.", headers={"WWW-Authenticate": "Bearer"})
+
+    try:
+        user = await get_user_by_id(int(sub), session)
+    except (UserIdDoesNotExist, ValueError):
+        Logger.log(LogLevel.ERROR, f"User ID `{sub}` from refresh token sub does not exist")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You must be authorized to access.", headers={"WWW-Authenticate": "Bearer"})
+
+    if is_token_issued_before_password_update(decoded, user):
+        Logger.log(LogLevel.ERROR, f"Refresh token for user ID `{sub}` was issued before their password was last updated")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You must be authorized to access.", headers={"WWW-Authenticate": "Bearer"})
+
     access_token = create_access_token(data={
-        "sub": sub,
+        "sub": str(user.id),
     })
 
     store_access_token(response, access_token)

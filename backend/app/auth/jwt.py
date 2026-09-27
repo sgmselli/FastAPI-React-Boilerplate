@@ -4,17 +4,20 @@ from jose import jwt
 from datetime import datetime, timedelta, timezone
 
 from app.core.config import settings
+from app.models.user import User
 
 def create_access_token(data: dict[Any, Any]) -> str:
     data_to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
-    data_to_encode.update({"exp": expire})
+    issued_at = datetime.now(timezone.utc)
+    expire = issued_at + timedelta(minutes=settings.access_token_expire_minutes)
+    data_to_encode.update({"exp": expire, "iat": issued_at})
     return jwt.encode(data_to_encode, settings.access_secret_key, algorithm=settings.jwt_encryption_algorithm)
 
 def create_refresh_token(data: dict[Any, Any]) -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
-    to_encode.update({"exp": expire})
+    issued_at = datetime.now(timezone.utc)
+    expire = issued_at + timedelta(days=settings.refresh_token_expire_days)
+    to_encode.update({"exp": expire, "iat": issued_at})
     return jwt.encode(to_encode, settings.refresh_secret_key, algorithm=settings.jwt_encryption_algorithm)
 
 def decode_access_token(token: str) ->  dict[str, Any]:
@@ -71,4 +74,13 @@ def delete_refresh_token(response: Response) -> None:
         path="/"
     )
 
+def is_token_issued_before_password_update(payload: dict[str, Any], user: User) -> bool:
+    """
+    Reports whether a token was issued before the user last changed their password.
+    """
+    issued_at = payload.get("iat")
+    if issued_at is None:
+        return True
 
+    password_updated_at = user.password_updated_at.replace(microsecond=0)
+    return datetime.fromtimestamp(issued_at, tz=timezone.utc) < password_updated_at

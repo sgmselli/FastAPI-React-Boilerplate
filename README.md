@@ -8,6 +8,7 @@ A boilerplate for a FastAPI backend (with Celery + Redis) and a React/TypeScript
 - [Tech Stack](documentation/tech-stack.md) — what the project is built with and why the pieces fit together
 - [Local Setup](documentation/local-setup.md) — running the app locally via Docker Compose
 - [Automated Testing](documentation/automated-testing.md) — unit, integration, and E2E testing strategy for backend and frontend
+- [Database Migrations](documentation/database-migrations.md) — creating and applying Alembic migrations as models change
 - [Google OAuth](documentation/google-oauth.md) — creating credentials and configuring sign-in with Google
 - [Google Analytics](documentation/google-analytics.md) — creating a GA4 property and enabling the tag
 - [Email Delivery](documentation/email.md) — sending transactional email via Brevo and Celery

@@ -39,8 +39,7 @@ async def auth_google_callback(
             try:
                 user = await get_user_by_email(email, session)
                 user.google_id = google_id
-                await session.commit()
-                await session.refresh(user)
+                await session.flush()
             except UserEmailDoesNotExist:
                 Logger.log(LogLevel.INFO, "Google ID does not exist for user. Creating user.")
                 user_create = UserCreate(

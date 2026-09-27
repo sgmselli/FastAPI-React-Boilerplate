@@ -1,11 +1,16 @@
 import React from 'react'
-import { UserPlus, Rocket, Mail, TestTube, Scale, BookOpen, FileQuestion } from 'lucide-react'
+import { UserPlus, Rocket, Mail, TestTube, Scale, BookOpen, FileQuestion, KeyRound } from 'lucide-react'
 
 const sections = [
     {
         title: 'Authentication',
         description: 'Login and registration with secure, session-based authentication and authentication-required pages.',
         icon: UserPlus,
+    },
+    {
+        title: 'Password Reset',
+        description: 'Emailed reset links that expire, can only be used once, and sign the account out everywhere when redeemed.',
+        icon: KeyRound,
     },
     {
         title: 'Email Delivery',
