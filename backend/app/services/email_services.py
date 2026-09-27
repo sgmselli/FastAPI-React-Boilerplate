@@ -15,4 +15,20 @@ class EmailService:
             data={"name": name},
         )
 
+    def send_password_reset_email(self, to_email: str, name: str, reset_url: str):
+        return self.client.send_email(
+            template_id=EmailTemplatesId.PASSWORD_RESET,
+            from_email=settings.from_email,
+            to_email=to_email,
+            data={"name": name, "reset_url": reset_url},
+        )
+
+    def send_password_reset_confirmation_email(self, to_email: str, name: str):
+        return self.client.send_email(
+            template_id=EmailTemplatesId.PASSWORD_RESET_CONFIRMATION,
+            from_email=settings.from_email,
+            to_email=to_email,
+            data={"name": name},
+        )
+
 email_service = EmailService(BrevoEmailClient())

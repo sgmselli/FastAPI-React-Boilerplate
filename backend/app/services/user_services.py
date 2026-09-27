@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -46,8 +48,16 @@ async def create_user_with_password(user_create: UserCreate, session: AsyncSessi
     )
 
     session.add(user)
-    await session.commit()
-    await session.refresh(user)
+    await session.flush()
+
+    return user
+
+async def update_user_password(user: User, password: str, session: AsyncSession) -> User:
+    user.password = hash_password(password)
+    user.password_updated_at = datetime.now(timezone.utc)
+
+    session.add(user)
+    await session.flush()
 
     return user
 
@@ -65,7 +75,6 @@ async def create_user_without_password(user_create: UserCreate, session: AsyncSe
     )
 
     session.add(user)
-    await session.commit()
-    await session.refresh(user)
+    await session.flush()
 
     return user

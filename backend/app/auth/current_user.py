@@ -6,7 +6,7 @@ from app.db.session import get_session
 from app.exceptions.user import UserIdDoesNotExist
 from app.models.user import User
 from app.services.user_services import get_user_by_id
-from app.auth.jwt import decode_access_token
+from app.auth.jwt import decode_access_token, is_token_issued_before_password_update
 from app.utils.logging import Logger, LogLevel
 
 async def get_current_user_or_raise_http_error(access_token: str = Cookie(None), session: AsyncSession = Depends(get_session)) -> User:
@@ -34,6 +34,10 @@ async def get_current_user_or_raise_http_error(access_token: str = Cookie(None),
         Logger.log(LogLevel.ERROR, f"User ID `{user_id}` from access token sub does not exist")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
+    if is_token_issued_before_password_update(payload, user):
+        Logger.log(LogLevel.ERROR, f"Access token for user ID `{user_id}` was issued before their password was last updated")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You must be authorized to access.", headers={"WWW-Authenticate": "Bearer"})
+
     return user
 
 async def get_current_user_or_return_none(access_token: str = Cookie(None), session: AsyncSession = Depends(get_session)) -> User | None:
@@ -60,6 +64,10 @@ async def get_current_user_or_return_none(access_token: str = Cookie(None), sess
         user = await get_user_by_id(int(user_id), session)
     except UserIdDoesNotExist as e:
         Logger.log(LogLevel.ERROR, f"User ID `{user_id}` from access token sub does not exist")
+        return None
+
+    if is_token_issued_before_password_update(payload, user):
+        Logger.log(LogLevel.ERROR, f"Access token for user ID `{user_id}` was issued before their password was last updated")
         return None
 
     return user

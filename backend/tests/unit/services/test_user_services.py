@@ -79,8 +79,7 @@ class TestCreateUserWithPassword:
         assert user.password == "hashed-value"
         assert user.email == "new@example.com"
         session.add.assert_called_once()
-        session.commit.assert_awaited_once()
-        session.refresh.assert_awaited_once()
+        session.flush.assert_awaited_once()
 
     async def test_raises_without_persisting_when_email_taken(self, mocker):
         existing = User(id=1, email="dupe@example.com", name="Existing")
@@ -97,7 +96,7 @@ class TestCreateUserWithPassword:
             await user_services.create_user_with_password(user_create, session)
 
         session.add.assert_not_called()
-        session.commit.assert_not_awaited()
+        session.flush.assert_not_awaited()
 
 
 class TestCreateUserWithoutPassword:
@@ -114,7 +113,7 @@ class TestCreateUserWithoutPassword:
         assert user.password is None
         assert user.google_id == "g-2"
         session.add.assert_called_once()
-        session.commit.assert_awaited_once()
+        session.flush.assert_awaited_once()
 
     async def test_raises_without_persisting_when_email_taken(self):
         existing = User(id=1, email="dupe2@example.com", name="Existing")
