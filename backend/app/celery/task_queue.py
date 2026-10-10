@@ -2,12 +2,10 @@ from celery import Celery
 
 from app.core.config import settings
 
-redis_url = f"redis://{settings.redis_host}:{settings.redis_port}/{settings.redis_db}"
-
 celery_task_queue = Celery(
     "worker",
-    broker=redis_url,
-    backend=redis_url,
+    broker=settings.celery_broker_url,
+    backend=settings.celery_result_backend,
     include=[
         "app.celery.tasks.email_tasks"
     ]

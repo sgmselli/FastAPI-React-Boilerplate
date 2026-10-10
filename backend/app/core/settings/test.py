@@ -18,6 +18,22 @@ class TestSettings(BaseAppSettings):
     redis_db: int = 0
     frontend_url: str = "http://localhost:3000"
 
+    @property
+    def celery_broker_url(self) -> str:
+        """
+        Keeps queued tasks inside the test process.
+
+        Publishing to the real Redis would hand every task the test suite
+        triggers to whichever worker happens to be running - and that worker
+        holds live Brevo credentials, so registering a user in a test sent a
+        real email. An in-memory transport has no consumer at all.
+        """
+        return "memory://"
+
+    @property
+    def celery_result_backend(self) -> str:
+        return "cache+memory://"
+
     model_config = SettingsConfigDict(
         env_file='.env.test',
         extra="ignore"
