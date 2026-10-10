@@ -59,6 +59,14 @@ class BaseAppSettings(BaseSettings):
         return f"postgresql+psycopg2://{self.database_user}:{self.database_password}@{self.database_host}:5432/{self.database_name}"
 
     @property
+    def celery_broker_url(self) -> str:
+        return f"redis://{self.redis_host}:{self.redis_port}/{self.redis_db}"
+
+    @property
+    def celery_result_backend(self) -> str:
+        return self.celery_broker_url
+
+    @property
     def fast_api_kwargs(self) -> dict[str, Any]:
         return {
             "debug": self.debug,
