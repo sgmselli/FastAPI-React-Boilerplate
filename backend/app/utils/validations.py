@@ -3,7 +3,7 @@ import re
 
 def validate_name(value: str) -> str:
     MINIMUM_CHARS = 1
-    MAXIMUM_CHARS = 200
+    MAXIMUM_CHARS = 50
     NAME_MATCH = re.match(r"^[A-Za-z0-9._ -]+$", value)
 
     if len(value) < MINIMUM_CHARS:

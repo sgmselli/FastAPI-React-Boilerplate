@@ -49,7 +49,7 @@ class TestName:
 
     def test_name_too_long_rejected(self):
         with pytest.raises(ValidationError) as exc_info:
-            make(name="a" * 201)
+            make(name="a" * 51)
         assert "name_too_long" in error_types(exc_info)
 
     def test_name_with_invalid_characters_rejected(self):
@@ -149,7 +149,7 @@ class TestUserUpdate:
 
     def test_name_too_long_rejected(self):
         with pytest.raises(ValidationError) as exc_info:
-            UserUpdate(name="a" * 201)
+            UserUpdate(name="a" * 51)
         assert "name_too_long" in error_types(exc_info)
 
     def test_name_with_invalid_characters_rejected(self):

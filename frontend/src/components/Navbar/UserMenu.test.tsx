@@ -15,6 +15,7 @@ describe('UserMenu', () => {
     renderWithProviders(<UserMenu name="Test User" />, { withAuth: false })
 
     expect(screen.queryByRole('link', { name: /Account/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Settings/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /Logout/ })).not.toBeInTheDocument()
   })
 
@@ -24,6 +25,7 @@ describe('UserMenu', () => {
     await userEvent.click(screen.getByRole('button', { name: /Test User/ }))
 
     expect(screen.getByRole('link', { name: /Account/ })).toHaveAttribute('href', '/account')
+    expect(screen.getByRole('link', { name: /Settings/ })).toHaveAttribute('href', '/settings')
     expect(screen.getByRole('link', { name: /Logout/ })).toHaveAttribute('href', '/logout')
   })
 
