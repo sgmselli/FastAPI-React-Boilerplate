@@ -1,22 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import axios from "axios";
 
 import type { ResetPasswordRequest } from "../../types/forgotPassword";
 import { confirmPasswordReset, validatePasswordResetToken } from "../../api/forgotPassword";
 import { Loading } from "../../components/Loading";
 import usePageTitle from "../../hooks/usePageTitle";
+import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 
-type ResetPasswordFieldErrors = {
-    password?: string;
-    confirm_password?: string;
-};
-
-type ApiValidationError = {
-    loc: (string | number)[];
-    msg: string;
-};
+type ResetPasswordField = "password" | "confirm_password";
 
 export const ResetPassword: React.FC = () => {
     // -----------------------------
@@ -34,7 +26,7 @@ export const ResetPassword: React.FC = () => {
 
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
-    const [fieldErrors, setFieldErrors] = useState<ResetPasswordFieldErrors>({});
+    const [fieldErrors, setFieldErrors] = useState<FieldErrors<ResetPasswordField>>({});
     const [submitted, setSubmitted] = useState<boolean>(false);
 
     const [showPassword, setShowPassword] = useState(false);
@@ -97,25 +89,9 @@ export const ResetPassword: React.FC = () => {
             await confirmPasswordReset(buildResetPasswordData());
             setSubmitted(true);
         } catch (err: unknown) {
-            const detail = axios.isAxiosError(err) ? err.response?.data?.detail : undefined;
-
-            // Check if detail is a string (simple error message)
-            if (typeof detail === 'string') {
-                setError(detail);
-            }
-            // Check if detail is an array (field validation errors)
-            else if (Array.isArray(detail)) {
-                const apiErrors: ResetPasswordFieldErrors = {};
-
-                (detail as ApiValidationError[]).forEach((e) => {
-                    const field = e.loc[1] as keyof ResetPasswordFieldErrors;
-                    apiErrors[field] = e.msg;
-                });
-
-                setFieldErrors(apiErrors);
-            } else {
-                setError("Failed to reset password.");
-            }
+            const { message, fieldErrors } = parseApiError<ResetPasswordField>(err, "Failed to reset password.");
+            setError(message);
+            setFieldErrors(fieldErrors);
         } finally {
             setLoading(false);
         }

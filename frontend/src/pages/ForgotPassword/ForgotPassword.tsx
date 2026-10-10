@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
 
 import type { ForgotPasswordRequest } from "../../types/forgotPassword";
 import { requestPasswordReset } from "../../api/forgotPassword";
 import { Loading } from "../../components/Loading";
 import usePageTitle from "../../hooks/usePageTitle";
+import { parseApiError } from "../../utils/apiErrors";
 
 export const ForgotPassword: React.FC = () => {
     // -----------------------------
@@ -37,8 +37,9 @@ export const ForgotPassword: React.FC = () => {
             await requestPasswordReset(buildForgotPasswordData());
             setSubmitted(true);
         } catch (e: unknown) {
-            const detail = axios.isAxiosError(e) ? e.response?.data?.detail : undefined;
-            setError(typeof detail === "string" ? detail : "Failed to send reset link.");
+            // No per-field messages on this form - validation errors get the fallback too
+            const { message } = parseApiError(e, "Failed to send reset link.");
+            setError(message ?? "Failed to send reset link.");
         } finally {
             setLoading(false);
         }
