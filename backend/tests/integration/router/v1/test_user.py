@@ -99,3 +99,68 @@ class TestCurrentUser:
         response = await client.get("/api/v1/user/current")
 
         assert response.status_code == 404
+
+
+class TestUpdateCurrentUser:
+    async def test_returns_200_with_updated_user(self, client: AsyncClient, make_user):
+        user = await make_user(email="update@example.com", name="Old Name")
+        client.cookies.set("access_token", create_access_token({"sub": str(user.id)}))
+
+        response = await client.patch("/api/v1/user/current", json={"name": "  New Name  "})
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["name"] == "New Name"
+        assert body["email"] == "update@example.com"
+        assert "password" not in body
+
+    async def test_persists_new_name(self, client: AsyncClient, make_user, db_session: AsyncSession):
+        user = await make_user(email="update-persist@example.com", name="Old Name")
+        client.cookies.set("access_token", create_access_token({"sub": str(user.id)}))
+
+        await client.patch("/api/v1/user/current", json={"name": "New Name"})
+
+        db_session.expire_all()
+        found = await get_user_by_email("update-persist@example.com", db_session)
+        assert found.name == "New Name"
+
+    async def test_email_in_body_is_ignored(self, client: AsyncClient, make_user, db_session: AsyncSession):
+        user = await make_user(email="keep-email@example.com", name="Old Name")
+        client.cookies.set("access_token", create_access_token({"sub": str(user.id)}))
+
+        response = await client.patch(
+            "/api/v1/user/current",
+            json={"name": "New Name", "email": "hijack@example.com"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["email"] == "keep-email@example.com"
+        db_session.expire_all()
+        found = await get_user_by_email("keep-email@example.com", db_session)
+        assert found.name == "New Name"
+
+    async def test_missing_cookie_returns_401(self, client: AsyncClient):
+        response = await client.patch("/api/v1/user/current", json={"name": "New Name"})
+        assert response.status_code == 401
+
+    async def test_invalid_name_returns_422_and_does_not_persist(
+        self, client: AsyncClient, make_user, db_session: AsyncSession
+    ):
+        user = await make_user(email="invalid-name@example.com", name="Old Name")
+        client.cookies.set("access_token", create_access_token({"sub": str(user.id)}))
+
+        response = await client.patch("/api/v1/user/current", json={"name": "Jane@Doe!"})
+
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == ["body", "name"]
+        db_session.expire_all()
+        found = await get_user_by_email("invalid-name@example.com", db_session)
+        assert found.name == "Old Name"
+
+    async def test_missing_name_returns_422(self, client: AsyncClient, make_user):
+        user = await make_user(email="missing-name@example.com")
+        client.cookies.set("access_token", create_access_token({"sub": str(user.id)}))
+
+        response = await client.patch("/api/v1/user/current", json={})
+
+        assert response.status_code == 422

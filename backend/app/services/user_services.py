@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions.user import UserAlreadyExists, UserIdDoesNotExist, UserEmailDoesNotExist, UserGoogleIdDoesNotExist
 from app.models.user import User
-from app.schema.user import UserCreate
+from app.schema.user import UserCreate, UserUpdate
 from app.auth.password import hash_password
 from app.utils.logging import Logger, LogLevel
 
@@ -46,6 +46,15 @@ async def create_user_with_password(user_create: UserCreate, session: AsyncSessi
         password=hashed_password,
         **user_create.model_dump(exclude={"email", "password", "confirm_password"})
     )
+
+    session.add(user)
+    await session.flush()
+
+    return user
+
+async def update_user(user: User, user_update: UserUpdate, session: AsyncSession) -> User:
+    for field, value in user_update.model_dump(exclude_unset=True).items():
+        setattr(user, field, value)
 
     session.add(user)
     await session.flush()

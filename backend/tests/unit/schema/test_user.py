@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.schema.user import UserCreate
+from app.schema.user import UserCreate, UserUpdate
 
 
 def make(**overrides):
@@ -126,3 +126,37 @@ class TestConfirmPassword:
             confirm_password="anything-at-all",
         )
         assert user.confirm_password == "anything-at-all"
+
+
+class TestUserUpdate:
+    def test_valid_name_accepted(self):
+        user_update = UserUpdate(name="Jane_Doe-2")
+        assert user_update.name == "Jane_Doe-2"
+
+    def test_name_is_stripped_but_case_preserved(self):
+        user_update = UserUpdate(name="  Jane Doe  ")
+        assert user_update.name == "Jane Doe"
+
+    def test_missing_name_rejected(self):
+        with pytest.raises(ValidationError) as exc_info:
+            UserUpdate()
+        assert "missing" in error_types(exc_info)
+
+    def test_whitespace_only_name_rejected(self):
+        with pytest.raises(ValidationError) as exc_info:
+            UserUpdate(name="   ")
+        assert "name_too_short" in error_types(exc_info)
+
+    def test_name_too_long_rejected(self):
+        with pytest.raises(ValidationError) as exc_info:
+            UserUpdate(name="a" * 201)
+        assert "name_too_long" in error_types(exc_info)
+
+    def test_name_with_invalid_characters_rejected(self):
+        with pytest.raises(ValidationError) as exc_info:
+            UserUpdate(name="Jane@Doe!")
+        assert "name_invalid" in error_types(exc_info)
+
+    def test_unknown_fields_are_dropped(self):
+        user_update = UserUpdate(name="Jane Doe", email="other@example.com")
+        assert user_update.model_dump() == {"name": "Jane Doe"}

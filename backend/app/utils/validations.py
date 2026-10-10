@@ -1,6 +1,28 @@
 from pydantic_core import PydanticCustomError
 import re
 
+def validate_name(value: str) -> str:
+    MINIMUM_CHARS = 1
+    MAXIMUM_CHARS = 200
+    NAME_MATCH = re.match(r"^[A-Za-z0-9._ -]+$", value)
+
+    if len(value) < MINIMUM_CHARS:
+        raise PydanticCustomError(
+            "name_too_short",
+            f"Name must be at least {MINIMUM_CHARS} character"
+        )
+    if len(value) > MAXIMUM_CHARS:
+        raise PydanticCustomError(
+            "name_too_long",
+            f"Name must be less than {MAXIMUM_CHARS} characters"
+        )
+    if not NAME_MATCH:
+        raise PydanticCustomError(
+            "name_invalid",
+            "Name can only contain letters, numbers, spaces, underscores, and hyphens"
+        )
+    return value
+
 def validate_password_strength(value: str) -> str:
     MINIMUM_CHARS = 1
     MAXIMUM_CHARS = 128

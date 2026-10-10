@@ -7,7 +7,7 @@ from app.exceptions.user import (
     UserIdDoesNotExist,
 )
 from app.models.user import User
-from app.schema.user import UserCreate
+from app.schema.user import UserCreate, UserUpdate
 from app.services import user_services
 from tests.unit.mocks import make_mock_session
 
@@ -128,3 +128,27 @@ class TestCreateUserWithoutPassword:
             await user_services.create_user_without_password(user_create, session)
 
         session.add.assert_not_called()
+
+
+class TestUpdateUser:
+    async def test_applies_new_name_and_flushes(self):
+        user = User(id=1, email="a@example.com", name="Old Name")
+        session = make_mock_session()
+
+        result = await user_services.update_user(user, UserUpdate(name="New Name"), session)
+
+        assert result is user
+        assert user.name == "New Name"
+        session.add.assert_called_once_with(user)
+        session.flush.assert_awaited_once()
+        session.commit.assert_not_awaited()
+
+    async def test_leaves_other_fields_untouched(self):
+        user = User(id=1, email="a@example.com", name="Old Name", password="hash", google_id="g-1")
+        session = make_mock_session()
+
+        await user_services.update_user(user, UserUpdate(name="New Name"), session)
+
+        assert user.email == "a@example.com"
+        assert user.password == "hash"
+        assert user.google_id == "g-1"
