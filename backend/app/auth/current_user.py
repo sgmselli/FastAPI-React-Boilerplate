@@ -32,7 +32,7 @@ async def get_current_user_or_raise_http_error(access_token: str = Cookie(None),
         user = await get_user_by_id(int(user_id), session)
     except UserIdDoesNotExist as e:
         Logger.log(LogLevel.ERROR, f"User ID `{user_id}` from access token sub does not exist")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You must be authorized to access.", headers={"WWW-Authenticate": "Bearer"})
 
     if is_token_issued_before_password_update(payload, user):
         Logger.log(LogLevel.ERROR, f"Access token for user ID `{user_id}` was issued before their password was last updated")

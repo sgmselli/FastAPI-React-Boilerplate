@@ -61,6 +61,10 @@ async def update_user(user: User, user_update: UserUpdate, session: AsyncSession
 
     return user
 
+async def delete_user(user: User, session: AsyncSession) -> None:
+    await session.delete(user)
+    await session.flush()
+
 async def update_user_password(user: User, password: str, session: AsyncSession) -> User:
     user.password = hash_password(password)
     user.password_updated_at = datetime.now(timezone.utc)

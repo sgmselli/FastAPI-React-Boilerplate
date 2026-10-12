@@ -152,3 +152,15 @@ class TestUpdateUser:
         assert user.email == "a@example.com"
         assert user.password == "hash"
         assert user.google_id == "g-1"
+
+
+class TestDeleteUser:
+    async def test_deletes_user_and_flushes_without_committing(self):
+        user = User(id=1, email="a@example.com", name="A")
+        session = make_mock_session()
+
+        await user_services.delete_user(user, session)
+
+        session.delete.assert_awaited_once_with(user)
+        session.flush.assert_awaited_once()
+        session.commit.assert_not_awaited()
