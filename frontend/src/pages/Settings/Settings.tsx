@@ -1,4 +1,5 @@
 import { ProfileSettings } from "./ProfileSettings";
+import { PasswordSettings } from "./PasswordSettings";
 import usePageTitle from "../../hooks/usePageTitle";
 
 export const Settings: React.FC = () => {
@@ -11,6 +12,7 @@ export const Settings: React.FC = () => {
                 <h1 className="text-2xl md:text-3xl font-semibold text-color">Settings</h1>
 
                 <ProfileSettings />
+                <PasswordSettings />
             </div>
         </section>
     );

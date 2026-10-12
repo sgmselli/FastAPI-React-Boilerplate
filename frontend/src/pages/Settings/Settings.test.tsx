@@ -12,6 +12,7 @@ import { renderWithProviders, screen, waitFor } from '../../test/renderWithProvi
 import { Settings } from './Settings'
 
 const UPDATE_URL = `${API}/user/current`
+const RESET_REQUEST_URL = `${API}/auth/password-reset/request`
 
 /** Stands in for the navbar - anything else reading the session's user. */
 function SessionUserName() {
@@ -46,11 +47,12 @@ async function replaceName(name: string) {
 const saveButton = () => screen.getByRole('button', { name: 'Save profile button' })
 
 describe('Settings page', () => {
-  it('renders the Settings heading and the Profile section', async () => {
+  it('renders the Settings heading and each section', async () => {
     await renderSettings()
 
     expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'Profile' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Password' })).toBeInTheDocument()
   })
 
   it('sets the page title', async () => {
@@ -240,6 +242,89 @@ describe('Profile settings', () => {
     await userEvent.click(saveButton())
 
     expect(await screen.findByText('Failed to update profile.')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+})
+
+describe('Password settings', () => {
+  const changePasswordButton = () =>
+    screen.getByRole('button', { name: 'Send me a link button' })
+
+  it('emails a reset link to the signed in user', async () => {
+    let body: Record<string, unknown> | undefined
+    server.use(
+      http.post(RESET_REQUEST_URL, async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ message: 'sent' }, { status: 202 })
+      }),
+    )
+
+    await renderSettings()
+    await userEvent.click(changePasswordButton())
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      "We've emailed you a link to change your password.",
+    )
+    expect(body).toEqual({ email: testUser.email })
+  })
+
+  it('disables the button as soon as it is clicked and keeps it disabled once sent', async () => {
+    let release: () => void = () => {}
+    server.use(
+      http.post(RESET_REQUEST_URL, async () => {
+        await new Promise<void>((resolve) => (release = resolve))
+        return HttpResponse.json({ message: 'sent' }, { status: 202 })
+      }),
+    )
+
+    await renderSettings()
+    expect(changePasswordButton()).toBeEnabled()
+    expect(changePasswordButton()).toHaveTextContent('Send me a link')
+
+    await userEvent.click(changePasswordButton())
+
+    await waitFor(() => expect(changePasswordButton()).toBeDisabled())
+    expect(changePasswordButton()).toHaveClass('opacity-50')
+    expect(changePasswordButton()).toHaveTextContent('Send me a link')
+
+    release()
+    await screen.findByRole('status')
+    expect(changePasswordButton()).toBeDisabled()
+    expect(changePasswordButton()).toHaveClass('opacity-50')
+  })
+
+  it('re-enables the button if sending fails so they can try again', async () => {
+    server.use(http.post(RESET_REQUEST_URL, () => new HttpResponse(null, { status: 500 })))
+
+    await renderSettings()
+    await userEvent.click(changePasswordButton())
+
+    await screen.findByText('Failed to send the email.')
+    expect(changePasswordButton()).toBeEnabled()
+    expect(changePasswordButton()).not.toHaveClass('opacity-50')
+  })
+
+  it('shows a string error detail above the section without a toast', async () => {
+    server.use(
+      http.post(RESET_REQUEST_URL, () =>
+        HttpResponse.json({ detail: 'Something went wrong.' }, { status: 400 }),
+      ),
+    )
+
+    await renderSettings()
+    await userEvent.click(changePasswordButton())
+
+    expect(await screen.findByText('Something went wrong.')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('falls back to a generic error when the API gives no detail', async () => {
+    server.use(http.post(RESET_REQUEST_URL, () => new HttpResponse(null, { status: 500 })))
+
+    await renderSettings()
+    await userEvent.click(changePasswordButton())
+
+    expect(await screen.findByText('Failed to send the email.')).toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })
