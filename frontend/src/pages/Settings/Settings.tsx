@@ -1,5 +1,6 @@
 import { ProfileSettings } from "./ProfileSettings";
 import { PasswordSettings } from "./PasswordSettings";
+import { DeleteAccountSettings } from "./DeleteAccountSettings";
 import usePageTitle from "../../hooks/usePageTitle";
 
 export const Settings: React.FC = () => {
@@ -13,6 +14,7 @@ export const Settings: React.FC = () => {
 
                 <ProfileSettings />
                 <PasswordSettings />
+                <DeleteAccountSettings />
             </div>
         </section>
     );

@@ -28,6 +28,8 @@ export const handlers = [
     return HttpResponse.json({ ...testUser, name: body.name.trim() })
   }),
 
+  http.delete(`${API}/user/current`, () => new HttpResponse(null, { status: 204 })),
+
   http.post(`${API}/user/register`, () => HttpResponse.json(testUser, { status: 201 })),
 
   http.post(`${API}/auth/password-reset/request`, () =>
