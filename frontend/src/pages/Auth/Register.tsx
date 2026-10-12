@@ -1,24 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { Google } from "../../components/Icons/Icons";
 import { registerUser } from "../../api/user";
 import type { UserCreateRequest } from "../../types/user";
 import { Loading } from "../../components/Loading";
 import usePageTitle from "../../hooks/usePageTitle";
 import { useAuth } from "../../contexts/auth";
+import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 
-type RegisterFieldErrors = {
-    email?: string;
-    name?: string;
-    password?: string;
-    confirm_password?: string;
-};
-
-type ApiValidationError = {
-    loc: (string | number)[];
-    msg: string;
-};
+type RegisterField = "email" | "name" | "password" | "confirm_password";
 
 export const Register: React.FC = () => {
     // -----------------------------
@@ -32,7 +22,7 @@ export const Register: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [fieldErrors, setFieldErrors] = useState<RegisterFieldErrors>({});
+    const [fieldErrors, setFieldErrors] = useState<FieldErrors<RegisterField>>({});
 
     const { login } = useAuth();
 
@@ -56,25 +46,9 @@ export const Register: React.FC = () => {
             await login({email, password});
             navigate("/auth/callback");
         } catch (err: unknown) {
-            const detail = axios.isAxiosError(err) ? err.response?.data?.detail : undefined;
-
-            // Check if detail is a string (simple error message)
-            if (typeof detail === 'string') {
-                setError(detail);
-            }
-            // Check if detail is an array (field validation errors)
-            else if (Array.isArray(detail)) {
-                const apiErrors: RegisterFieldErrors = {};
-
-                (detail as ApiValidationError[]).forEach((e) => {
-                    const field = e.loc[1] as keyof RegisterFieldErrors;
-                    apiErrors[field] = e.msg;
-                });
-
-                setFieldErrors(apiErrors);
-            } else {
-                setError("Failed to create account.");
-            }
+            const { message, fieldErrors } = parseApiError<RegisterField>(err, "Failed to create account.");
+            setError(message);
+            setFieldErrors(fieldErrors);
         } finally {
             setLoading(false);
         }

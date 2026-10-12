@@ -10,6 +10,10 @@ export interface UserLoginRequest {
     password: string;
 }
 
+export interface UserUpdateRequest {
+    name: string;
+}
+
 export interface UserResponse {
     id: number;
     name: string;

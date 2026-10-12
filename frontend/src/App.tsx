@@ -9,6 +9,7 @@ import { TermsAndConditions } from "./pages/TermsAndConditions/TermsAndCondition
 import { Login } from "./pages/Auth/Login";
 import { Register } from "./pages/Auth/Register";
 import { AuthProvider } from "./contexts/auth";
+import { ToastProvider } from "./contexts/toast";
 
 import AuthorizedRoute from "./components/ProtectedRoutes/AuthorizedRoute";
 import UnauthorisedRoute from "./components/ProtectedRoutes/UnauthorizedRoute";
@@ -16,36 +17,40 @@ import { Logout } from "./pages/Auth/Logout";
 import { AuthCallback } from "./pages/Auth/AuthCallback";
 import { ForgotPassword } from "./pages/ForgotPassword/ForgotPassword";
 import { ResetPassword } from "./pages/ResetPassword/ResetPassword";
+import { Settings } from "./pages/Settings/Settings";
 
 function App() {
 
   return (
     <Router>
       <AuthProvider>
-        <Routes>
-            <Route path="/" element={<Page children={<Landing />} />} />
-            <Route path="/privacy-policy" element={<Page children={<PrivacyPolicy />} />} />
-            <Route path="/terms-and-conditions" element={<Page children={<TermsAndConditions />} />} />
-            <Route path="/*" element={<Page children={<NotFound />} />} />
-            <Route path="/auth/callback" element={<Page children={<AuthCallback />} />} />
+        <ToastProvider>
+          <Routes>
+              <Route path="/" element={<Page children={<Landing />} />} />
+              <Route path="/privacy-policy" element={<Page children={<PrivacyPolicy />} />} />
+              <Route path="/terms-and-conditions" element={<Page children={<TermsAndConditions />} />} />
+              <Route path="/*" element={<Page children={<NotFound />} />} />
+              <Route path="/auth/callback" element={<Page children={<AuthCallback />} />} />
 
-            {/* Outside the unauthenticated routes - a signed in user following
-                a reset link from their email must not be bounced away from it */}
-            <Route path="/password-reset" element={<Page children={<ResetPassword />} />} />
+              {/* Outside the unauthenticated routes - a signed in user following
+                  a reset link from their email must not be bounced away from it */}
+              <Route path="/password-reset" element={<Page children={<ResetPassword />} />} />
 
-            {/* Must be authenticated routes */}
-            <Route element={<AuthorizedRoute />}>
-              <Route path="/account" element={<Page children={<Account />} />} />
-              <Route path="/logout" element={<Page children={<Logout />} />} />
-            </Route>
+              {/* Must be authenticated routes */}
+              <Route element={<AuthorizedRoute />}>
+                <Route path="/account" element={<Page children={<Account />} />} />
+                <Route path="/settings" element={<Page children={<Settings />} />} />
+                <Route path="/logout" element={<Page children={<Logout />} />} />
+              </Route>
 
-            {/* Must be unauthenticated routes */}
-            <Route element={<UnauthorisedRoute />}>
-              <Route path="/login" element={<Page children={<Login />} />} />
-              <Route path="/register" element={<Page children={<Register />} />} />
-              <Route path="/forgot-password" element={<Page children={<ForgotPassword />} />} />
-            </Route>
-        </Routes>
+              {/* Must be unauthenticated routes */}
+              <Route element={<UnauthorisedRoute />}>
+                <Route path="/login" element={<Page children={<Login />} />} />
+                <Route path="/register" element={<Page children={<Register />} />} />
+                <Route path="/forgot-password" element={<Page children={<ForgotPassword />} />} />
+              </Route>
+          </Routes>
+        </ToastProvider>
       </AuthProvider>
     </Router>
   )
