@@ -1,5 +1,5 @@
 from app.celery.task_queue import celery_task_queue
-from app.services import email_services
+from app.services.email_services import get_email_service
 
 @celery_task_queue.task(
     name="task_send_welcome_email",
@@ -9,7 +9,7 @@ from app.services import email_services
     max_retries=5,
 )
 def task_send_welcome_email(to_email: str, name: str):
-    email_services.get_email_service().send_welcome_email(to_email, name)
+    get_email_service().send_welcome_email(to_email, name)
 
 @celery_task_queue.task(
     name="task_send_password_reset_email",
@@ -19,7 +19,7 @@ def task_send_welcome_email(to_email: str, name: str):
     max_retries=5,
 )
 def task_send_password_reset_email(to_email: str, name: str, reset_url: str):
-    email_services.get_email_service().send_password_reset_email(to_email, name, reset_url)
+    get_email_service().send_password_reset_email(to_email, name, reset_url)
 
 @celery_task_queue.task(
     name="task_send_password_reset_confirmation_email",
@@ -29,4 +29,14 @@ def task_send_password_reset_email(to_email: str, name: str, reset_url: str):
     max_retries=5,
 )
 def task_send_password_reset_confirmation_email(to_email: str, name: str):
-    email_services.get_email_service().send_password_reset_confirmation_email(to_email, name)
+    get_email_service().send_password_reset_confirmation_email(to_email, name)
+
+@celery_task_queue.task(
+    name="task_send_account_deleted_email",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=5,
+)
+def task_send_account_deleted_email(to_email: str, name: str):
+    get_email_service().send_account_deleted_email(to_email, name)

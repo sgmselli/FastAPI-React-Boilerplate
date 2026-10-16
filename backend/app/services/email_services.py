@@ -31,5 +31,13 @@ class EmailService:
             data={"name": name},
         )
 
+    def send_account_deleted_email(self, to_email: str, name: str):
+        return self.client.send_email(
+            template_id=EmailTemplatesId.ACCOUNT_DELETED,
+            from_email=settings.from_email,
+            to_email=to_email,
+            data={"name": name},
+        )
+
 def get_email_service() -> EmailService:
     return EmailService(BrevoEmailClient())

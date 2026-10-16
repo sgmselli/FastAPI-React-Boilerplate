@@ -172,6 +172,12 @@ class TestUpdateCurrentUser:
         assert response.status_code == 422
 
 
+@pytest.fixture
+def queued_account_deleted_email(mocker):
+    """Stands in for the Celery task so the test can see what would be queued."""
+    return mocker.patch("app.router.v1.user.task_send_account_deleted_email")
+
+
 class TestDeleteCurrentUser:
     async def test_returns_204_and_removes_user(
         self, client: AsyncClient, make_user, db_session: AsyncSession
@@ -252,3 +258,36 @@ class TestDeleteCurrentUser:
     async def test_missing_cookie_returns_401(self, client: AsyncClient):
         response = await client.delete("/api/v1/user/current")
         assert response.status_code == 401
+
+    async def test_queues_account_deleted_email(
+        self, client: AsyncClient, make_user, queued_account_deleted_email
+    ):
+        user = await make_user(email="goodbye@example.com", name="Goodbye User")
+        client.cookies.set("access_token", create_access_token({"sub": str(user.id)}))
+
+        await client.delete("/api/v1/user/current")
+
+        queued_account_deleted_email.delay.assert_called_once_with(
+            "goodbye@example.com", "Goodbye User"
+        )
+
+    async def test_still_deletes_when_email_cannot_be_queued(
+        self, client: AsyncClient, make_user, db_session: AsyncSession, queued_account_deleted_email
+    ):
+        queued_account_deleted_email.delay.side_effect = ConnectionError("broker down")
+        user = await make_user(email="no-broker@example.com")
+        client.cookies.set("access_token", create_access_token({"sub": str(user.id)}))
+
+        response = await client.delete("/api/v1/user/current")
+
+        assert response.status_code == 204
+        db_session.expire_all()
+        with pytest.raises(UserEmailDoesNotExist):
+            await get_user_by_email("no-broker@example.com", db_session)
+
+    async def test_no_email_when_not_authenticated(
+        self, client: AsyncClient, queued_account_deleted_email
+    ):
+        await client.delete("/api/v1/user/current")
+
+        queued_account_deleted_email.delay.assert_not_called()
