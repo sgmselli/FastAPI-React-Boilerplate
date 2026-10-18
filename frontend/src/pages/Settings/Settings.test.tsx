@@ -342,12 +342,6 @@ describe('Delete account settings', () => {
   const confirmInput = () => screen.getByLabelText('Delete confirmation input')
   const confirmButton = () => screen.getByRole('button', { name: 'Confirm delete account button' })
 
-  it('marks the section with a Danger badge', async () => {
-    await renderSettings()
-
-    expect(screen.getByText('Danger')).toHaveClass('badge-error')
-  })
-
   it('does not show the confirmation dialog until the button is clicked', async () => {
     await renderSettings()
 

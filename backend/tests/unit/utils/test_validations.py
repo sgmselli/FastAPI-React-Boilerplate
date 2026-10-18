@@ -20,6 +20,7 @@ class TestValidateName:
         with pytest.raises(PydanticCustomError) as exc_info:
             validate_name("a" * 51)
         assert exc_info.value.type == "name_too_long"
+        assert str(exc_info.value) == "Name must be up to 50 characters"
 
     def test_name_with_invalid_characters_rejected(self):
         with pytest.raises(PydanticCustomError) as exc_info:

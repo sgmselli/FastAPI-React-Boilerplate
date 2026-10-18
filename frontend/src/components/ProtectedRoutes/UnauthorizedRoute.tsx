@@ -1,12 +1,17 @@
 import { Navigate, Outlet } from "react-router-dom";
 
 import { useAuth } from "../../contexts/auth";
+import { Loading } from "../Loading";
 
 export default function UnauthorisedRoute() {
   const { user, loadingUser } = useAuth();
 
   if (loadingUser) {
-    return <div className="flex items-center justify-center h-screen"><span className="loading primary-text loading-xl"></span></div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loading />
+      </div>
+    );
   }
 
   if (user) {

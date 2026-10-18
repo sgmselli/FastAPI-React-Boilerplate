@@ -14,7 +14,7 @@ def validate_name(value: str) -> str:
     if len(value) > MAXIMUM_CHARS:
         raise PydanticCustomError(
             "name_too_long",
-            f"Name must be less than {MAXIMUM_CHARS} characters"
+            f"Name must be up to {MAXIMUM_CHARS} characters"
         )
     if not NAME_MATCH:
         raise PydanticCustomError(
