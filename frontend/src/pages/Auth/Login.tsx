@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import axios from "axios";
 
 import { Google } from "../../components/Icons/Icons";
 import type { UserLoginRequest } from "../../types/user";
 import { useAuth } from "../../contexts/auth";
 import { Loading } from "../../components/Loading";
 import usePageTitle from "../../hooks/usePageTitle";
+import { parseApiError } from "../../utils/apiErrors";
 
 export const Login: React.FC = () => {
     // -----------------------------
@@ -46,8 +46,9 @@ export const Login: React.FC = () => {
             await login(buildLoginData());
             navigate("/auth/callback");
         } catch (e: unknown) {
-            const detail = axios.isAxiosError(e) ? e.response?.data?.detail : undefined;
-            setError(typeof detail === "string" ? detail : "Failed to sign in.");
+            // No per-field messages on this form - validation errors get the fallback too
+            const { message } = parseApiError(e, "Failed to sign in.");
+            setError(message ?? "Failed to sign in.");
         } finally {
             setLoading(false);
         }

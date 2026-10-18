@@ -4,6 +4,7 @@ import type { ReactElement, ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 
 import { AuthProvider } from '../contexts/auth'
+import { ToastProvider } from '../contexts/toast'
 
 interface Options extends Omit<RenderOptions, 'wrapper'> {
   /** Initial history entries. Use to render a component at a given route. */
@@ -28,7 +29,13 @@ export function renderWithProviders(
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <MemoryRouter initialEntries={[route]}>
-        {withAuth ? <AuthProvider>{children}</AuthProvider> : children}
+        {withAuth ? (
+          <AuthProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </AuthProvider>
+        ) : (
+          <ToastProvider>{children}</ToastProvider>
+        )}
       </MemoryRouter>
     )
   }

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { API_URL as API } from '../test/constants'
 import { server } from '../test/setup'
 import { testUser } from '../test/handlers'
-import { getCurrentUser, loginUser, logoutUser, registerUser } from './user'
+import { deleteCurrentUser, getCurrentUser, loginUser, logoutUser, registerUser, updateCurrentUser } from './user'
 
 describe('registerUser', () => {
   it('maps confirmPassword to the snake_case confirm_password the API expects', async () => {
@@ -126,5 +126,66 @@ describe('getCurrentUser', () => {
   it('returns the current user', async () => {
     const user = await getCurrentUser()
     expect(user).toEqual(testUser)
+  })
+})
+
+describe('updateCurrentUser', () => {
+  it('sends a PATCH with only the name', async () => {
+    let body: Record<string, unknown> | undefined
+
+    server.use(
+      http.patch(`${API}/user/current`, async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ ...testUser, name: 'New Name' })
+      }),
+    )
+
+    await updateCurrentUser({ name: 'New Name' })
+
+    expect(body).toEqual({ name: 'New Name' })
+  })
+
+  it('returns the updated user', async () => {
+    const user = await updateCurrentUser({ name: 'New Name' })
+    expect(user).toEqual({ ...testUser, name: 'New Name' })
+  })
+
+  it('rejects when the API returns a validation error', async () => {
+    server.use(
+      http.patch(`${API}/user/current`, () =>
+        HttpResponse.json(
+          { detail: [{ loc: ['body', 'name'], msg: 'Name is invalid' }] },
+          { status: 422 },
+        ),
+      ),
+    )
+
+    await expect(updateCurrentUser({ name: 'Bad@Name' })).rejects.toThrow()
+  })
+})
+
+describe('deleteCurrentUser', () => {
+  it('sends a DELETE to the current user endpoint', async () => {
+    let called = false
+    server.use(
+      http.delete(`${API}/user/current`, () => {
+        called = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    await deleteCurrentUser()
+
+    expect(called).toBe(true)
+  })
+
+  it('rejects when the API returns an error', async () => {
+    server.use(
+      http.delete(`${API}/user/current`, () =>
+        HttpResponse.json({ detail: 'Something went wrong.' }, { status: 500 }),
+      ),
+    )
+
+    await expect(deleteCurrentUser()).rejects.toThrow()
   })
 })

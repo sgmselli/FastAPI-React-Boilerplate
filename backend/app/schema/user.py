@@ -1,9 +1,8 @@
 from pydantic import BaseModel, EmailStr, field_validator, ValidationInfo
 from pydantic_core import PydanticCustomError
-import re
 
 from app.utils.normalizations import normalize_capital_insenitive, normalize_capital_senitive
-from app.utils.validations import validate_password_strength
+from app.utils.validations import validate_name, validate_password_strength
 
 class UserResponse(BaseModel):
     id: int
@@ -11,6 +10,12 @@ class UserResponse(BaseModel):
     name: str
 
     model_config = {"from_attributes": True}
+
+class UserUpdate(BaseModel):
+    name: str
+
+    normalize_names = field_validator("name", mode="before")(normalize_capital_insenitive)
+    validate_names = field_validator("name")(validate_name)
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -21,29 +26,7 @@ class UserCreate(BaseModel):
 
     normalize_names = field_validator("name", mode="before")(normalize_capital_insenitive)
     normalize_email_name = field_validator('email', mode="before")(normalize_capital_senitive)
-
-    @field_validator("name")
-    def validate_name(cls, value: str):
-        MINIMUM_CHARS = 1
-        MAXIMUM_CHARS = 200
-        NAME_MATCH = re.match(r"^[A-Za-z0-9._ -]+$", value)
-
-        if len(value) < MINIMUM_CHARS:
-            raise PydanticCustomError(
-                "name_too_short",
-                f"Name must be at least {MINIMUM_CHARS} character"
-            )
-        if len(value) > MAXIMUM_CHARS:
-            raise PydanticCustomError(
-                "name_too_long",
-                f"Name must be less than {MAXIMUM_CHARS} characters"
-            )
-        if not NAME_MATCH:
-            raise PydanticCustomError(
-                "name_invalid",
-                "Name can only contain letters, numbers, spaces, underscores, and hyphens"
-            )
-        return value
+    validate_names = field_validator("name")(validate_name)
 
     @field_validator("password")
     def validate_password(cls, value: str | None, info: ValidationInfo):

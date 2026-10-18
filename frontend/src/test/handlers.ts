@@ -23,6 +23,13 @@ export const handlers = [
 
   http.post(`${API}/auth/refresh`, () => HttpResponse.json({})),
 
+  http.patch(`${API}/user/current`, async ({ request }) => {
+    const body = (await request.json()) as { name: string }
+    return HttpResponse.json({ ...testUser, name: body.name.trim() })
+  }),
+
+  http.delete(`${API}/user/current`, () => new HttpResponse(null, { status: 204 })),
+
   http.post(`${API}/user/register`, () => HttpResponse.json(testUser, { status: 201 })),
 
   http.post(`${API}/auth/password-reset/request`, () =>

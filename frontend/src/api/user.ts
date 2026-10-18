@@ -1,4 +1,4 @@
-import type { UserResponse, UserCreateRequest, UserLoginRequest } from "../types/user";
+import type { UserResponse, UserCreateRequest, UserLoginRequest, UserUpdateRequest } from "../types/user";
 import { api, apiAuth } from "./index";
 
 export async function registerUser(
@@ -45,4 +45,16 @@ export async function getCurrentUser(
   return response.data;
 }
 
+export async function updateCurrentUser(
+  user: UserUpdateRequest
+): Promise<UserResponse> {
+  const response = await apiAuth.patch("/user/current", {
+    name: user.name
+  });
+  return response.data;
+}
 
+export async function deleteCurrentUser(
+): Promise<void> {
+  await apiAuth.delete("/user/current");
+}

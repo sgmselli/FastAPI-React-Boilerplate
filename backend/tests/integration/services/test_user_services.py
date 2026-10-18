@@ -8,13 +8,15 @@ from app.exceptions.user import (
     UserGoogleIdDoesNotExist,
     UserIdDoesNotExist,
 )
-from app.schema.user import UserCreate
+from app.schema.user import UserCreate, UserUpdate
 from app.services.user_services import (
     create_user_with_password,
     create_user_without_password,
+    delete_user,
     get_user_by_email,
     get_user_by_google_id,
     get_user_by_id,
+    update_user,
 )
 
 
@@ -106,3 +108,30 @@ class TestCreateUserWithoutPassword:
         )
         with pytest.raises(UserAlreadyExists):
             await create_user_without_password(user_create, db_session)
+
+
+class TestUpdateUser:
+    async def test_persists_new_name(self, db_session: AsyncSession, make_user):
+        created = await make_user(email="rename@example.com", name="Old Name")
+
+        user_id = created.id
+
+        await update_user(created, UserUpdate(name="New Name"), db_session)
+        await db_session.commit()
+        db_session.expire_all()
+
+        found = await get_user_by_id(user_id, db_session)
+        assert found.name == "New Name"
+        assert found.email == "rename@example.com"
+
+
+class TestDeleteUser:
+    async def test_removes_user(self, db_session: AsyncSession, make_user):
+        created = await make_user(email="delete-me@example.com")
+        user_id = created.id
+
+        await delete_user(created, db_session)
+        await db_session.commit()
+
+        with pytest.raises(UserIdDoesNotExist):
+            await get_user_by_id(user_id, db_session)
