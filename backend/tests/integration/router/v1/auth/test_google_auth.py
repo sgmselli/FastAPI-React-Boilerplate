@@ -4,7 +4,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.router.v1.auth import google_auth
-from app.services.user_services import get_user_by_email
+from app.services.user_services import UserService
 
 
 def fake_token(google_id="google-abc", email="googleuser@example.com", name="Google User"):
@@ -31,7 +31,7 @@ class TestGoogleCallback:
         assert "/auth/callback" in response.headers["location"]
         assert response.cookies.get("access_token") is not None
 
-        user = await get_user_by_email("brandnew@example.com", db_session)
+        user = await UserService(db_session).get_user_by_email("brandnew@example.com")
         assert user.google_id == "google-abc"
         assert user.password is None
 
@@ -47,7 +47,7 @@ class TestGoogleCallback:
         response = await client.get("/api/v1/auth/google/callback", follow_redirects=False)
 
         assert response.status_code == 302
-        user = await get_user_by_email("linkme@example.com", db_session)
+        user = await UserService(db_session).get_user_by_email("linkme@example.com")
         assert user.google_id == "google-link"
 
     async def test_logs_in_existing_google_user(

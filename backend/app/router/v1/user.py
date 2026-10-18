@@ -1,10 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import get_session
 from app.exceptions.user import UserAlreadyExists
 from app.schema.user import UserResponse, UserCreate, UserUpdate
-import app.services.user_services as user_services
+from app.services.user_services import UserService, get_user_service
 from app.models.user import User
 from app.auth.current_user import get_current_user_or_raise_http_error
 from app.auth.jwt import delete_tokens
@@ -21,19 +19,19 @@ async def get_current_user_data(current_user: User = Depends(get_current_user_or
 async def update_current_user(
     user_update: UserUpdate,
     current_user: User = Depends(get_current_user_or_raise_http_error),
-    session: AsyncSession = Depends(get_session)
+    user_service: UserService = Depends(get_user_service)
 ):
-    return await user_services.update_user(current_user, user_update, session)
+    return await user_service.update_user(current_user, user_update)
 
 @router.delete("/current", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_current_user(
     response: Response,
     current_user: User = Depends(get_current_user_or_raise_http_error),
-    session: AsyncSession = Depends(get_session)
+    user_service: UserService = Depends(get_user_service)
 ):
     user_id, email, name = current_user.id, current_user.email, current_user.name
 
-    await user_services.delete_user(current_user, session)
+    await user_service.delete_user(current_user)
     delete_tokens(response)
     Logger.log(LogLevel.INFO, f"Deleted account for user ID '{user_id}'")
 
@@ -43,9 +41,9 @@ async def delete_current_user(
         Logger.log(LogLevel.ERROR, f"Failed to queue account deleted email for user ID '{user_id}': {e}")
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register_user(user_create: UserCreate, session: AsyncSession = Depends(get_session)):
+async def register_user(user_create: UserCreate, user_service: UserService = Depends(get_user_service)):
     try:
-        user = await user_services.create_user_with_password(user_create, session)
+        user = await user_service.create_user_with_password(user_create)
     except UserAlreadyExists as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 

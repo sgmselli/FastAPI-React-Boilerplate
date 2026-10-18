@@ -1,15 +1,13 @@
 from fastapi import Cookie, Depends, HTTPException, status
 from jose import JWTError
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import get_session
 from app.exceptions.user import UserIdDoesNotExist
 from app.models.user import User
-from app.services.user_services import get_user_by_id
+from app.services.user_services import UserService, get_user_service
 from app.auth.jwt import decode_access_token, is_token_issued_before_password_update
 from app.utils.logging import Logger, LogLevel
 
-async def get_current_user_or_raise_http_error(access_token: str = Cookie(None), session: AsyncSession = Depends(get_session)) -> User:
+async def get_current_user_or_raise_http_error(access_token: str = Cookie(None), user_service: UserService = Depends(get_user_service)) -> User:
     """
     Accepts an access token from a cookie and returns a user.
 
@@ -29,7 +27,7 @@ async def get_current_user_or_raise_http_error(access_token: str = Cookie(None),
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You must be authorized to access.", headers={"WWW-Authenticate": "Bearer"})
 
     try:
-        user = await get_user_by_id(int(user_id), session)
+        user = await user_service.get_user_by_id(int(user_id))
     except UserIdDoesNotExist as e:
         Logger.log(LogLevel.ERROR, f"User ID `{user_id}` from access token sub does not exist")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You must be authorized to access.", headers={"WWW-Authenticate": "Bearer"})
@@ -40,7 +38,7 @@ async def get_current_user_or_raise_http_error(access_token: str = Cookie(None),
 
     return user
 
-async def get_current_user_or_return_none(access_token: str = Cookie(None), session: AsyncSession = Depends(get_session)) -> User | None:
+async def get_current_user_or_return_none(access_token: str = Cookie(None), user_service: UserService = Depends(get_user_service)) -> User | None:
     """
     Accepts an access token from a cookie and returns a user.
 
@@ -61,7 +59,7 @@ async def get_current_user_or_return_none(access_token: str = Cookie(None), sess
         return None
 
     try:
-        user = await get_user_by_id(int(user_id), session)
+        user = await user_service.get_user_by_id(int(user_id))
     except UserIdDoesNotExist as e:
         Logger.log(LogLevel.ERROR, f"User ID `{user_id}` from access token sub does not exist")
         return None
