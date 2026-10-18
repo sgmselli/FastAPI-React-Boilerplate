@@ -40,6 +40,7 @@ The HTML for each template is kept in [`documentation/email-templates/`](email-t
 | Welcome | [`welcome.html`](email-templates/welcome.html) | `name` |
 | Password reset | [`password-reset.html`](email-templates/password-reset.html) | `name`, `reset_url` |
 | Password reset confirmation | [`password-reset-confirmation.html`](email-templates/password-reset-confirmation.html) | `name` |
+| Account deleted | [`account-deleted.html`](email-templates/account-deleted.html) | `name` |
 
 > **The repository copies are for tracking only.** Brevo is the source of truth — the live template is whatever the dashboard holds, and nothing in this codebase reads these files at runtime. They exist so the markup has a history and can be reviewed in a pull request. Edit the real template in the Brevo UI; if you change the HTML meaningfully, paste it back here so the two don't drift.
 
@@ -82,6 +83,7 @@ class EmailTemplatesId(Enum):
     WELCOME = 3
     PASSWORD_RESET = 2
     PASSWORD_RESET_CONFIRMATION = 4
+    ACCOUNT_DELETED = 5
 ```
 
 These are the IDs from one Brevo account — replace each with the ID your own account assigned in step 2. The values must be integers, since they're passed straight through to Brevo's `template_id` field.
@@ -119,6 +121,12 @@ Password reset follows the same path, and sends twice.
 The email is queued whether or not the address has an account, and the API returns the same response either way — anything else would let someone check which addresses are registered.
 
 **The confirmation.** `POST /api/v1/auth/password-reset/confirm` queues `task_send_password_reset_confirmation_email` after the password changes. It carries no link, deliberately: it's sent after a possible account takeover, so a button to click is exactly what an attacker would want to imitate. Its job is to be the tripwire that tells someone their password changed when they didn't change it.
+
+## The account deleted email
+
+`DELETE /api/v1/user/current` queues `task_send_account_deleted_email` with the user's email and name once the row is deleted. Both are read before the delete, since the task can't look the user up afterwards - there's nothing left to look up.
+
+Like the password reset confirmation it carries no link. It's the last thing the address hears from the app, and its job is to tell someone their account is gone if they didn't do it themselves.
 
 ## Testing locally
 

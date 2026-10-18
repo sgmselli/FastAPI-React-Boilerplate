@@ -8,7 +8,7 @@ import { useAuth } from '../../contexts/auth'
 import { API_URL as API } from '../../test/constants'
 import { testUser } from '../../test/handlers'
 import { server } from '../../test/setup'
-import { renderWithProviders, screen, waitFor } from '../../test/renderWithProviders'
+import { renderWithProviders, screen, waitFor, within } from '../../test/renderWithProviders'
 import { Settings } from './Settings'
 
 const UPDATE_URL = `${API}/user/current`
@@ -28,6 +28,8 @@ async function renderSettings() {
     <>
       <SessionUserName />
       <Routes>
+        <Route path="/" element={<h1>Home page</h1>} />
+        <Route path="/login" element={<h1>Login page</h1>} />
         <Route element={<AuthorizedRoute />}>
           <Route path="/settings" element={<Settings />} />
         </Route>
@@ -52,7 +54,8 @@ describe('Settings page', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'Profile' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 2, name: 'Password' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Change Password' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Delete account' })).toBeInTheDocument()
   })
 
   it('sets the page title', async () => {
@@ -325,6 +328,158 @@ describe('Password settings', () => {
     await userEvent.click(changePasswordButton())
 
     expect(await screen.findByText('Failed to send the email.')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+})
+
+describe('Delete account settings', () => {
+  const DELETE_URL = `${API}/user/current`
+
+  const openDialog = async () => {
+    await userEvent.click(screen.getByRole('button', { name: 'Delete account button' }))
+    return screen.getByRole('dialog', { name: 'Delete your account?' })
+  }
+  const confirmInput = () => screen.getByLabelText('Delete confirmation input')
+  const confirmButton = () => screen.getByRole('button', { name: 'Confirm delete account button' })
+
+  it('marks the section with a Danger badge', async () => {
+    await renderSettings()
+
+    expect(screen.getByText('Danger')).toHaveClass('badge-error')
+  })
+
+  it('does not show the confirmation dialog until the button is clicked', async () => {
+    await renderSettings()
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await openDialog()
+    expect(confirmInput()).toHaveFocus()
+  })
+
+  it('keeps the confirm button disabled until DELETE is typed exactly', async () => {
+    await renderSettings()
+    await openDialog()
+
+    expect(confirmButton()).toBeDisabled()
+    expect(confirmButton()).toHaveClass('opacity-50')
+
+    await userEvent.type(confirmInput(), 'delete')
+    expect(confirmButton()).toBeDisabled()
+
+    await userEvent.clear(confirmInput())
+    await userEvent.type(confirmInput(), 'DELETE')
+    expect(confirmButton()).toBeEnabled()
+    expect(confirmButton()).not.toHaveClass('opacity-50')
+  })
+
+  it('closes on Cancel, Escape and a backdrop click without deleting', async () => {
+    let called = false
+    server.use(
+      http.delete(DELETE_URL, () => {
+        called = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    await renderSettings()
+
+    await openDialog()
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel delete account button' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await openDialog()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    const dialog = await openDialog()
+    await userEvent.click(dialog.parentElement!)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    expect(called).toBe(false)
+  })
+
+  it('clears what was typed when the dialog is reopened', async () => {
+    await renderSettings()
+    await openDialog()
+    await userEvent.type(confirmInput(), 'DELETE')
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel delete account button' }))
+
+    await openDialog()
+
+    expect(confirmInput()).toHaveValue('')
+    expect(confirmButton()).toBeDisabled()
+  })
+
+  it('deletes the account, signs out and lands on the home page with a toast', async () => {
+    let called = false
+    server.use(
+      http.delete(DELETE_URL, () => {
+        called = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    await renderSettings()
+    await openDialog()
+    await userEvent.type(confirmInput(), 'DELETE')
+    await userEvent.click(confirmButton())
+
+    // Home, not /login - the protected route must be left before the user is cleared
+    expect(await screen.findByRole('heading', { name: 'Home page' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Login page' })).not.toBeInTheDocument()
+    expect(called).toBe(true)
+    expect(screen.getByTestId('session-user-name')).toHaveTextContent('none')
+    expect(screen.getByRole('status')).toHaveTextContent('Your account has been deleted.')
+  })
+
+  it('submits with Enter once confirmed', async () => {
+    await renderSettings()
+    await openDialog()
+    await userEvent.type(confirmInput(), 'DELETE{Enter}')
+
+    expect(await screen.findByRole('heading', { name: 'Home page' })).toBeInTheDocument()
+  })
+
+  it('disables the dialog while deleting', async () => {
+    let release: () => void = () => {}
+    server.use(
+      http.delete(DELETE_URL, async () => {
+        await new Promise<void>((resolve) => (release = resolve))
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    await renderSettings()
+    await openDialog()
+    await userEvent.type(confirmInput(), 'DELETE')
+    await userEvent.click(confirmButton())
+
+    await waitFor(() => expect(confirmButton()).toBeDisabled())
+    expect(confirmInput()).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Cancel delete account button' })).toBeDisabled()
+
+    // Escape is ignored mid-request
+    await userEvent.keyboard('{Escape}')
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    release()
+    await screen.findByRole('heading', { name: 'Home page' })
+  })
+
+  it('shows the error in the dialog and keeps the user signed in when deleting fails', async () => {
+    server.use(http.delete(DELETE_URL, () => new HttpResponse(null, { status: 500 })))
+
+    await renderSettings()
+    await openDialog()
+    await userEvent.type(confirmInput(), 'DELETE')
+    await userEvent.click(confirmButton())
+
+    const dialog = screen.getByRole('dialog')
+    expect(await within(dialog).findByText('Failed to delete your account.')).toBeInTheDocument()
+    expect(confirmButton()).toBeEnabled()
+    expect(screen.getByTestId('session-user-name')).toHaveTextContent(testUser.name)
+    expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })

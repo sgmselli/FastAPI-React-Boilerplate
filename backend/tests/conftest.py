@@ -22,6 +22,9 @@ class MockEmailService:
     def send_password_reset_confirmation_email(self, to_email: str, name: str):
         self._record("password_reset_confirmation", to_email=to_email, name=name)
 
+    def send_account_deleted_email(self, to_email: str, name: str):
+        self._record("account_deleted", to_email=to_email, name=name)
+
     def _record(self, email: str, **fields):
         self.sent.append({"email": email, **fields})
         Logger.log(LogLevel.INFO, f"Mock email service: would have sent '{email}' to {fields['to_email']}")

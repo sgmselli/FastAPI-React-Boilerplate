@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { API_URL as API } from '../test/constants'
 import { server } from '../test/setup'
 import { testUser } from '../test/handlers'
-import { getCurrentUser, loginUser, logoutUser, registerUser, updateCurrentUser } from './user'
+import { deleteCurrentUser, getCurrentUser, loginUser, logoutUser, registerUser, updateCurrentUser } from './user'
 
 describe('registerUser', () => {
   it('maps confirmPassword to the snake_case confirm_password the API expects', async () => {
@@ -161,5 +161,31 @@ describe('updateCurrentUser', () => {
     )
 
     await expect(updateCurrentUser({ name: 'Bad@Name' })).rejects.toThrow()
+  })
+})
+
+describe('deleteCurrentUser', () => {
+  it('sends a DELETE to the current user endpoint', async () => {
+    let called = false
+    server.use(
+      http.delete(`${API}/user/current`, () => {
+        called = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    await deleteCurrentUser()
+
+    expect(called).toBe(true)
+  })
+
+  it('rejects when the API returns an error', async () => {
+    server.use(
+      http.delete(`${API}/user/current`, () =>
+        HttpResponse.json({ detail: 'Something went wrong.' }, { status: 500 }),
+      ),
+    )
+
+    await expect(deleteCurrentUser()).rejects.toThrow()
   })
 })

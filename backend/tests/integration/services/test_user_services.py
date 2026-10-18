@@ -12,6 +12,7 @@ from app.schema.user import UserCreate, UserUpdate
 from app.services.user_services import (
     create_user_with_password,
     create_user_without_password,
+    delete_user,
     get_user_by_email,
     get_user_by_google_id,
     get_user_by_id,
@@ -122,3 +123,15 @@ class TestUpdateUser:
         found = await get_user_by_id(user_id, db_session)
         assert found.name == "New Name"
         assert found.email == "rename@example.com"
+
+
+class TestDeleteUser:
+    async def test_removes_user(self, db_session: AsyncSession, make_user):
+        created = await make_user(email="delete-me@example.com")
+        user_id = created.id
+
+        await delete_user(created, db_session)
+        await db_session.commit()
+
+        with pytest.raises(UserIdDoesNotExist):
+            await get_user_by_id(user_id, db_session)

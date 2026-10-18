@@ -53,3 +53,8 @@ export async function updateCurrentUser(
   });
   return response.data;
 }
+
+export async function deleteCurrentUser(
+): Promise<void> {
+  await apiAuth.delete("/user/current");
+}
