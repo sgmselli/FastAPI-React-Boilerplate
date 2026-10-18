@@ -1,12 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import RedirectResponse
 
 from app.core.config import settings
-from app.db.session import get_session
 from app.exceptions.user import UserGoogleIdDoesNotExist, UserEmailDoesNotExist
 from app.schema.user import UserResponse, UserCreate
-from app.services.user_services import get_user_by_google_id, create_user_without_password, get_user_by_email
+from app.services.user_services import UserService, get_user_service
 from app.auth.jwt import create_access_token, create_refresh_token, store_tokens
 from app.utils.logging import Logger, LogLevel
 from app.auth.oauth.google_oauth import google_oath
@@ -20,7 +18,7 @@ async def auth_google_login(request: Request):
 @router.get('/callback', response_model=UserResponse, status_code=status.HTTP_200_OK)
 async def auth_google_callback(
     request: Request,
-    session: AsyncSession = Depends(get_session)
+    user_service: UserService = Depends(get_user_service)
 ):
     try:
         token = await google_oath.authorize_access_token(request)
@@ -34,12 +32,11 @@ async def auth_google_callback(
         name = google_user.get("name")
 
         try:
-            user = await get_user_by_google_id(google_id, session)
+            user = await user_service.get_user_by_google_id(google_id)
         except UserGoogleIdDoesNotExist:
             try:
-                user = await get_user_by_email(email, session)
-                user.google_id = google_id
-                await session.flush()
+                user = await user_service.get_user_by_email(email)
+                await user_service.link_google_id(user, google_id)
             except UserEmailDoesNotExist:
                 Logger.log(LogLevel.INFO, "Google ID does not exist for user. Creating user.")
                 user_create = UserCreate(
@@ -47,7 +44,7 @@ async def auth_google_callback(
                     name=name,
                     google_id=google_id
                 )
-                user = await create_user_without_password(user_create, session)
+                user = await user_service.create_user_without_password(user_create)
              
         access_token = create_access_token({"sub": str(user.id)})
         refresh_token = create_refresh_token({"sub": str(user.id)})

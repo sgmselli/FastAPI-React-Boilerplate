@@ -3,12 +3,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from uuid import uuid4
 
 from jose import JWTError
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import get_session
 from app.exceptions.user import UserEmailDoesNotExist, UserIdDoesNotExist
 from app.schema.user import UserResponse
-from app.services.user_services import get_user_by_email, get_user_by_id
+from app.services.user_services import UserService, get_user_service
 from app.auth.jwt import create_access_token, create_refresh_token, store_tokens, decode_refresh_token, \
     store_access_token, delete_tokens, is_token_issued_before_password_update
 from app.auth.password import verify_password
@@ -19,14 +17,14 @@ router = APIRouter()
 @router.post('/login', response_model=UserResponse, status_code=status.HTTP_200_OK)
 async def login(
     response: Response,
-    session: AsyncSession = Depends(get_session),
+    user_service: UserService = Depends(get_user_service),
     form_data: OAuth2PasswordRequestForm = Depends()
 ):
     email = form_data.username
     password = form_data.password
 
     try:
-        user = await get_user_by_email(email, session)
+        user = await user_service.get_user_by_email(email)
     except UserEmailDoesNotExist:
         Logger.log(LogLevel.ERROR, f"A user entered an email '{email}' which does not exist")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password.")
@@ -50,7 +48,7 @@ async def login(
 async def refresh_auth_tokens(
     response: Response,
     refresh_token: str = Cookie(None),
-    session: AsyncSession = Depends(get_session)
+    user_service: UserService = Depends(get_user_service)
 ):
     if refresh_token is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You must be authorized to access.", headers={"WWW-Authenticate": "Bearer"})
@@ -66,7 +64,7 @@ async def refresh_auth_tokens(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You must be authorized to access.", headers={"WWW-Authenticate": "Bearer"})
 
     try:
-        user = await get_user_by_id(int(sub), session)
+        user = await user_service.get_user_by_id(int(sub))
     except (UserIdDoesNotExist, ValueError):
         Logger.log(LogLevel.ERROR, f"User ID `{sub}` from refresh token sub does not exist")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You must be authorized to access.", headers={"WWW-Authenticate": "Bearer"})

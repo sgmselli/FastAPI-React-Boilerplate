@@ -11,7 +11,7 @@ from jose import jwt as jose_jwt
 from app.auth.password import verify_password
 from app.core.config import settings
 from app.models.password_reset_token import PasswordResetToken
-from app.services.user_services import get_user_by_email
+from app.services.user_services import UserService
 
 REQUEST_URL = "/api/v1/auth/password-reset/request"
 VALIDATE_URL = "/api/v1/auth/password-reset/validate"
@@ -192,7 +192,7 @@ class TestConfirm:
         )
 
         assert response.status_code == 200
-        user = await get_user_by_email("reset@example.com", db_session)
+        user = await UserService(db_session).get_user_by_email("reset@example.com")
         assert verify_password(NEW_PASSWORD, user.password)
 
     async def test_marks_the_token_as_used(
@@ -263,7 +263,7 @@ class TestConfirm:
         )
 
         assert response.status_code == 400
-        user = await get_user_by_email("reset@example.com", db_session)
+        user = await UserService(db_session).get_user_by_email("reset@example.com")
         assert verify_password(shared_password, user.password)
 
     async def test_unknown_and_expired_tokens_share_a_message(
@@ -334,7 +334,7 @@ class TestConfirm:
             },
         )
 
-        refreshed = await get_user_by_email("reset@example.com", db_session)
+        refreshed = await UserService(db_session).get_user_by_email("reset@example.com")
         assert refreshed.password_updated_at > before
 
 

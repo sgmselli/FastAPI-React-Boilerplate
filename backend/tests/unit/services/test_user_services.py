@@ -8,7 +8,7 @@ from app.exceptions.user import (
 )
 from app.models.user import User
 from app.schema.user import UserCreate, UserUpdate
-from app.services import user_services
+from app.services.user_services import UserService
 from tests.unit.mocks import make_mock_session
 
 
@@ -17,7 +17,7 @@ class TestGetUserById:
         fake_user = User(id=1, email="a@example.com", name="A")
         session = make_mock_session(first_return=fake_user)
 
-        result = await user_services.get_user_by_id(1, session)
+        result = await UserService(session).get_user_by_id(1)
 
         assert result is fake_user
 
@@ -25,7 +25,7 @@ class TestGetUserById:
         session = make_mock_session(first_return=None)
 
         with pytest.raises(UserIdDoesNotExist):
-            await user_services.get_user_by_id(999, session)
+            await UserService(session).get_user_by_id(999)
 
 
 class TestGetUserByEmail:
@@ -33,7 +33,7 @@ class TestGetUserByEmail:
         fake_user = User(id=1, email="a@example.com", name="A")
         session = make_mock_session(first_return=fake_user)
 
-        result = await user_services.get_user_by_email("a@example.com", session)
+        result = await UserService(session).get_user_by_email("a@example.com")
 
         assert result is fake_user
 
@@ -41,7 +41,7 @@ class TestGetUserByEmail:
         session = make_mock_session(first_return=None)
 
         with pytest.raises(UserEmailDoesNotExist):
-            await user_services.get_user_by_email("nobody@example.com", session)
+            await UserService(session).get_user_by_email("nobody@example.com")
 
 
 class TestGetUserByGoogleId:
@@ -49,7 +49,7 @@ class TestGetUserByGoogleId:
         fake_user = User(id=1, email="a@example.com", name="A", google_id="g-1")
         session = make_mock_session(first_return=fake_user)
 
-        result = await user_services.get_user_by_google_id("g-1", session)
+        result = await UserService(session).get_user_by_google_id("g-1")
 
         assert result is fake_user
 
@@ -57,7 +57,7 @@ class TestGetUserByGoogleId:
         session = make_mock_session(first_return=None)
 
         with pytest.raises(UserGoogleIdDoesNotExist):
-            await user_services.get_user_by_google_id("missing", session)
+            await UserService(session).get_user_by_google_id("missing")
 
 
 class TestCreateUserWithPassword:
@@ -73,7 +73,7 @@ class TestCreateUserWithPassword:
             confirm_password="Str0ng!Pass",
         )
 
-        user = await user_services.create_user_with_password(user_create, session)
+        user = await UserService(session).create_user_with_password(user_create)
 
         mock_hash.assert_called_once_with("Str0ng!Pass")
         assert user.password == "hashed-value"
@@ -93,7 +93,7 @@ class TestCreateUserWithPassword:
         )
 
         with pytest.raises(UserAlreadyExists):
-            await user_services.create_user_with_password(user_create, session)
+            await UserService(session).create_user_with_password(user_create)
 
         session.add.assert_not_called()
         session.flush.assert_not_awaited()
@@ -108,7 +108,7 @@ class TestCreateUserWithoutPassword:
             google_id="g-2",
         )
 
-        user = await user_services.create_user_without_password(user_create, session)
+        user = await UserService(session).create_user_without_password(user_create)
 
         assert user.password is None
         assert user.google_id == "g-2"
@@ -125,7 +125,7 @@ class TestCreateUserWithoutPassword:
         )
 
         with pytest.raises(UserAlreadyExists):
-            await user_services.create_user_without_password(user_create, session)
+            await UserService(session).create_user_without_password(user_create)
 
         session.add.assert_not_called()
 
@@ -135,7 +135,7 @@ class TestUpdateUser:
         user = User(id=1, email="a@example.com", name="Old Name")
         session = make_mock_session()
 
-        result = await user_services.update_user(user, UserUpdate(name="New Name"), session)
+        result = await UserService(session).update_user(user, UserUpdate(name="New Name"))
 
         assert result is user
         assert user.name == "New Name"
@@ -147,11 +147,26 @@ class TestUpdateUser:
         user = User(id=1, email="a@example.com", name="Old Name", password="hash", google_id="g-1")
         session = make_mock_session()
 
-        await user_services.update_user(user, UserUpdate(name="New Name"), session)
+        await UserService(session).update_user(user, UserUpdate(name="New Name"))
 
         assert user.email == "a@example.com"
         assert user.password == "hash"
         assert user.google_id == "g-1"
+
+
+class TestLinkGoogleId:
+    async def test_sets_google_id_and_flushes(self):
+        user = User(id=1, email="a@example.com", name="A", password="hash")
+        session = make_mock_session()
+
+        result = await UserService(session).link_google_id(user, "g-1")
+
+        assert result is user
+        assert user.google_id == "g-1"
+        assert user.password == "hash"
+        session.add.assert_called_once_with(user)
+        session.flush.assert_awaited_once()
+        session.commit.assert_not_awaited()
 
 
 class TestDeleteUser:
@@ -159,7 +174,7 @@ class TestDeleteUser:
         user = User(id=1, email="a@example.com", name="A")
         session = make_mock_session()
 
-        await user_services.delete_user(user, session)
+        await UserService(session).delete_user(user)
 
         session.delete.assert_awaited_once_with(user)
         session.flush.assert_awaited_once()

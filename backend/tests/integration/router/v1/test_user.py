@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.jwt import create_access_token, create_refresh_token
 from app.exceptions.user import UserEmailDoesNotExist
 from app.models.password_reset_token import PasswordResetToken
-from app.services.user_services import get_user_by_email
+from app.services.user_services import UserService
 
 
 class TestRegister:
@@ -40,7 +40,7 @@ class TestRegister:
             },
         )
 
-        user = await get_user_by_email("persisted@example.com", db_session)
+        user = await UserService(db_session).get_user_by_email("persisted@example.com")
         assert user.name == "Persisted User"
 
     async def test_duplicate_email_returns_409(self, client: AsyncClient, make_user):
@@ -127,7 +127,7 @@ class TestUpdateCurrentUser:
         await client.patch("/api/v1/user/current", json={"name": "New Name"})
 
         db_session.expire_all()
-        found = await get_user_by_email("update-persist@example.com", db_session)
+        found = await UserService(db_session).get_user_by_email("update-persist@example.com")
         assert found.name == "New Name"
 
     async def test_email_in_body_is_ignored(self, client: AsyncClient, make_user, db_session: AsyncSession):
@@ -142,7 +142,7 @@ class TestUpdateCurrentUser:
         assert response.status_code == 200
         assert response.json()["email"] == "keep-email@example.com"
         db_session.expire_all()
-        found = await get_user_by_email("keep-email@example.com", db_session)
+        found = await UserService(db_session).get_user_by_email("keep-email@example.com")
         assert found.name == "New Name"
 
     async def test_missing_cookie_returns_401(self, client: AsyncClient):
@@ -160,7 +160,7 @@ class TestUpdateCurrentUser:
         assert response.status_code == 422
         assert response.json()["detail"][0]["loc"] == ["body", "name"]
         db_session.expire_all()
-        found = await get_user_by_email("invalid-name@example.com", db_session)
+        found = await UserService(db_session).get_user_by_email("invalid-name@example.com")
         assert found.name == "Old Name"
 
     async def test_missing_name_returns_422(self, client: AsyncClient, make_user):
@@ -191,7 +191,7 @@ class TestDeleteCurrentUser:
         assert response.content == b""
         db_session.expire_all()
         with pytest.raises(UserEmailDoesNotExist):
-            await get_user_by_email("delete@example.com", db_session)
+            await UserService(db_session).get_user_by_email("delete@example.com")
 
     async def test_clears_both_cookies(self, client: AsyncClient, make_user):
         user = await make_user(email="delete-cookies@example.com")
@@ -283,7 +283,7 @@ class TestDeleteCurrentUser:
         assert response.status_code == 204
         db_session.expire_all()
         with pytest.raises(UserEmailDoesNotExist):
-            await get_user_by_email("no-broker@example.com", db_session)
+            await UserService(db_session).get_user_by_email("no-broker@example.com")
 
     async def test_no_email_when_not_authenticated(
         self, client: AsyncClient, queued_account_deleted_email
