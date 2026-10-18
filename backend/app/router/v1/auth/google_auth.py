@@ -41,10 +41,9 @@ async def auth_google_callback(
                 Logger.log(LogLevel.INFO, "Google ID does not exist for user. Creating user.")
                 user_create = UserCreate(
                     email=email,
-                    name=name,
                     google_id=google_id
                 )
-                user = await user_service.create_user_without_password(user_create)
+                user = await user_service.create_user_without_password(user_create, name)
              
         access_token = create_access_token({"sub": str(user.id)})
         refresh_token = create_refresh_token({"sub": str(user.id)})

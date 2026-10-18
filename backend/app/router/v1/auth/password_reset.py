@@ -38,7 +38,7 @@ async def request_password_reset(
     Logger.log(LogLevel.DEBUG, reset_url)
 
     try:
-        task_send_password_reset_email.delay(user.email, user.name, reset_url)
+        task_send_password_reset_email.delay(user.email, user.display_name, reset_url)
     except Exception as e:
         Logger.log(LogLevel.ERROR, f"Failed to queue password reset email for user ID '{user.id}': {e}")
 
@@ -74,7 +74,7 @@ async def confirm_password_reset(
     await user_service.update_user_password(user, reset_password_request.password)
 
     try:
-        task_send_password_reset_confirmation_email.delay(user.email, user.name)
+        task_send_password_reset_confirmation_email.delay(user.email, user.display_name)
     except Exception as e:
         Logger.log(LogLevel.ERROR, f"Failed to queue password reset confirmation email for user ID '{user.id}': {e}")
 

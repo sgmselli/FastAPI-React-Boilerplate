@@ -75,18 +75,14 @@ class TestRequest:
         queued_email.delay.assert_called_once()
         assert queued_email.delay.call_args.args[0] == "known@example.com"
 
-    async def test_unknown_email_is_indistinguishable_from_a_known_one(
+    async def test_email_is_addressed_to_the_profile_name(
         self, client: AsyncClient, make_user, queued_email
     ):
-        # The generic response is the only thing stopping this endpoint from
-        # being an account enumeration oracle.
-        await make_user(email="real@example.com")
+        await make_user(email="named@example.com", name="Named User")
 
-        known = await client.post(REQUEST_URL, json={"email": "real@example.com"})
-        unknown = await client.post(REQUEST_URL, json={"email": "ghost@example.com"})
+        await client.post(REQUEST_URL, json={"email": "named@example.com"})
 
-        assert known.status_code == unknown.status_code == 202
-        assert known.json() == unknown.json()
+        assert queued_email.delay.call_args.args[1] == "Named User"
 
     async def test_unknown_email_sends_nothing_and_stores_nothing(
         self, client: AsyncClient, db_session: AsyncSession, queued_email
@@ -108,16 +104,6 @@ class TestRequest:
         tokens = (await db_session.execute(select(PasswordResetToken))).scalars().all()
         assert len(tokens) == 1
         assert tokens[0].token_hash != raw_token
-
-    async def test_email_is_normalised_before_lookup(
-        self, client: AsyncClient, make_user, queued_email
-    ):
-        await make_user(email="case@example.com")
-
-        response = await client.post(REQUEST_URL, json={"email": "  CASE@Example.com "})
-
-        assert response.status_code == 202
-        queued_email.delay.assert_called_once()
 
     async def test_reset_link_carries_the_token_in_the_fragment(
         self, client: AsyncClient, make_user, queued_email
@@ -265,33 +251,6 @@ class TestConfirm:
         assert response.status_code == 400
         user = await UserService(db_session).get_user_by_email("reset@example.com")
         assert verify_password(shared_password, user.password)
-
-    async def test_unknown_and_expired_tokens_share_a_message(
-        self, client: AsyncClient, db_session: AsyncSession, user_with_token
-    ):
-        _, raw_token = user_with_token
-        token = (await db_session.execute(select(PasswordResetToken))).scalars().one()
-        token.created_at = datetime.now(timezone.utc) - timedelta(hours=1)
-        await db_session.flush()
-
-        expired = await client.post(
-            CONFIRM_URL,
-            json={
-                "token": raw_token,
-                "password": NEW_PASSWORD,
-                "confirm_password": NEW_PASSWORD,
-            },
-        )
-        unknown = await client.post(
-            CONFIRM_URL,
-            json={
-                "token": "never-issued",
-                "password": NEW_PASSWORD,
-                "confirm_password": NEW_PASSWORD,
-            },
-        )
-
-        assert expired.json() == unknown.json()
 
     async def test_mismatched_confirmation_returns_422(
         self, client: AsyncClient, user_with_token

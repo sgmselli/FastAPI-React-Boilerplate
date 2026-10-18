@@ -1,13 +1,16 @@
 from datetime import datetime, timezone
 
 from fastapi import Depends
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
 from app.exceptions.user import UserAlreadyExists, UserIdDoesNotExist, UserEmailDoesNotExist, UserGoogleIdDoesNotExist
 from app.models.user import User
-from app.schema.user import UserCreate, UserUpdate
+from app.models.user_profile import UserProfile
+from app.schema.user import UserCreate
+from app.schema.user_profile import UserProfileCreate
 from app.auth.password import hash_password
 from app.utils.logging import Logger, LogLevel
 
@@ -51,17 +54,9 @@ class UserService:
         user = User(
             email=email,
             password=hashed_password,
+            profile=UserProfile(**UserProfileCreate().model_dump()),
             **user_create.model_dump(exclude={"email", "password", "confirm_password"})
         )
-
-        self.session.add(user)
-        await self.session.flush()
-
-        return user
-
-    async def update_user(self, user: User, user_update: UserUpdate) -> User:
-        for field, value in user_update.model_dump(exclude_unset=True).items():
-            setattr(user, field, value)
 
         self.session.add(user)
         await self.session.flush()
@@ -89,7 +84,7 @@ class UserService:
 
         return user
 
-    async def create_user_without_password(self, user_create: UserCreate) -> User:
+    async def create_user_without_password(self, user_create: UserCreate, name: str | None = None) -> User:
         email = user_create.email.strip().lower()
 
         result = await self.session.execute(select(User).where(User.email == email))
@@ -97,8 +92,17 @@ class UserService:
         if existing:
             raise UserAlreadyExists(email)
 
+        # A name from a third party (e.g. Google) only prefills the profile when
+        # it passes our own validation - otherwise the user sets it later.
+        try:
+            profile_create = UserProfileCreate(name=name)
+        except ValidationError:
+            Logger.log(LogLevel.INFO, "Name from third party failed validation. Leaving profile name empty.")
+            profile_create = UserProfileCreate()
+
         user = User(
             email=email,
+            profile=UserProfile(**profile_create.model_dump()),
             **user_create.model_dump(exclude={"email", "password", "confirm_password"})
         )
 
