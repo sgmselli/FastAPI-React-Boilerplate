@@ -140,24 +140,7 @@ class TestCreateUserWithoutPassword:
 
         session.add.assert_not_called()
 
-    async def test_prefills_profile_name_when_valid(self):
-        session = make_mock_session(first_return=None)
-        user_create = UserCreate(email="google@example.com", google_id="g-2")
-
-        user = await UserService(session).create_user_without_password(user_create, "  Google User  ")
-
-        assert user.profile.name == "Google User"
-
-    async def test_leaves_profile_name_empty_when_name_fails_validation(self):
-        session = make_mock_session(first_return=None)
-        user_create = UserCreate(email="google@example.com", google_id="g-2")
-
-        user = await UserService(session).create_user_without_password(user_create, "Jane@Doe!")
-
-        assert user.profile is not None
-        assert user.profile.name is None
-
-    async def test_leaves_profile_name_empty_when_no_name_given(self):
+    async def test_creates_an_empty_profile_with_the_user(self):
         session = make_mock_session(first_return=None)
         user_create = UserCreate(email="google@example.com", google_id="g-2")
 

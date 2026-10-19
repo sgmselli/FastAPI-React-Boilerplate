@@ -12,16 +12,32 @@ export function uniqueEmail(prefix = 'e2e'): string {
 
 export async function registerUser(
   page: Page,
-  { name, email, password = TEST_PASSWORD }: { name: string; email: string; password?: string },
+  { email, password = TEST_PASSWORD }: { email: string; password?: string },
 ) {
   await page.goto('/register');
 
-  await page.getByRole('textbox', { name: /Name input/i }).fill(name);
   await page.getByRole('textbox', { name: /Register email input/i }).fill(email);
   await page.getByRole('textbox', { name: /Register password input/i }).fill(password);
   await page.getByRole('textbox', { name: /Confirm password input/i }).fill(password);
 
   await page.getByRole('button', { name: /Create account button/i }).click();
+}
+
+/**
+ * A new account lands on the optional complete profile page - fill in the
+ * name and carry on, or skip it.
+ */
+export async function completeProfile(page: Page, name: string) {
+  await page.waitForURL('**/complete-profile');
+
+  await page.getByRole('textbox', { name: /Name input/i }).fill(name);
+  await page.getByRole('button', { name: /Save profile button/i }).click();
+}
+
+export async function skipProfile(page: Page) {
+  await page.waitForURL('**/complete-profile');
+
+  await page.getByRole('button', { name: /Skip profile button/i }).click();
 }
 
 export async function loginUser(

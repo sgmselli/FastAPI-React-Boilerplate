@@ -8,6 +8,7 @@ from app.schema.user_profile import UserProfileResponse
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
+    display_name: str
     profile: UserProfileResponse
 
     model_config = {"from_attributes": True}

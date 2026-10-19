@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 
 import { API_URL as API } from '../../test/constants'
 import { server } from '../../test/setup'
+import { withProfileName } from '../../test/handlers'
 import { renderWithProviders, screen, waitFor } from '../../test/renderWithProviders'
 import { Register } from './Register'
 
@@ -23,7 +24,6 @@ beforeEach(() => {
 })
 
 async function fillForm() {
-  await userEvent.type(screen.getByLabelText('Name input'), 'Test User')
   await userEvent.type(screen.getByLabelText('Register email input'), 'test@example.com')
   await userEvent.type(screen.getByLabelText('Register password input'), 'Str0ng!Pass')
   await userEvent.type(screen.getByLabelText('Confirm password input'), 'Str0ng!Pass')
@@ -33,7 +33,7 @@ describe('Register', () => {
   it('renders the registration form', () => {
     renderWithProviders(<Register />, { route: '/register' })
 
-    expect(screen.getByLabelText('Name input')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Name input')).not.toBeInTheDocument()
     expect(screen.getByLabelText('Register email input')).toBeInTheDocument()
     expect(screen.getByLabelText('Register password input')).toBeInTheDocument()
     expect(screen.getByLabelText('Confirm password input')).toBeInTheDocument()
@@ -44,11 +44,11 @@ describe('Register', () => {
     server.use(
       http.post(`${API}/user/register`, () => {
         calls.push('register')
-        return HttpResponse.json({ id: 1, name: 'Test User', email: 'test@example.com' }, { status: 201 })
+        return HttpResponse.json(withProfileName(null), { status: 201 })
       }),
       http.post(`${API}/auth/login`, () => {
         calls.push('login')
-        return HttpResponse.json({ id: 1, name: 'Test User', email: 'test@example.com' })
+        return HttpResponse.json(withProfileName(null))
       }),
     )
 
@@ -68,7 +68,7 @@ describe('Register', () => {
     server.use(
       http.post(`${API}/user/register`, async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json({ id: 1, name: 'Test User', email: 'test@example.com' }, { status: 201 })
+        return HttpResponse.json(withProfileName(null), { status: 201 })
       }),
     )
 
@@ -77,6 +77,29 @@ describe('Register', () => {
     await userEvent.click(screen.getByLabelText('Create account button'))
 
     await waitFor(() => expect(body).toHaveProperty('confirm_password', 'Str0ng!Pass'))
+  })
+
+  it('registers with only an email and password', async () => {
+    // The name is collected afterwards on the optional complete profile page.
+    let body: Record<string, unknown> = {}
+    server.use(
+      http.post(`${API}/user/register`, async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json(withProfileName(null), { status: 201 })
+      }),
+    )
+
+    renderWithProviders(<Register />, { route: '/register' })
+    await fillForm()
+    await userEvent.click(screen.getByLabelText('Create account button'))
+
+    await waitFor(() =>
+      expect(body).toEqual({
+        email: 'test@example.com',
+        password: 'Str0ng!Pass',
+        confirm_password: 'Str0ng!Pass',
+      }),
+    )
   })
 
   it('shows a string detail as a form-level error', async () => {
@@ -103,7 +126,7 @@ describe('Register', () => {
           {
             detail: [
               { loc: ['body', 'password'], msg: 'Password must contain at least one number' },
-              { loc: ['body', 'name'], msg: 'Name can only contain letters' },
+              { loc: ['body', 'email'], msg: 'value is not a valid email address' },
             ],
           },
           { status: 422 },
@@ -118,7 +141,7 @@ describe('Register', () => {
     expect(
       await screen.findByText('Password must contain at least one number'),
     ).toBeInTheDocument()
-    expect(screen.getByText('Name can only contain letters')).toBeInTheDocument()
+    expect(screen.getByText('value is not a valid email address')).toBeInTheDocument()
   })
 
   it('falls back to a generic message when the server sends no detail', async () => {

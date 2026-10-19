@@ -1,6 +1,7 @@
 import React, { type ReactNode, useEffect } from "react";
 import { Navbar } from "./Navbar/Navbar";
 import { Footer } from "./Footer/Footer";
+import { CompleteProfileBanner } from "./CompleteProfileBanner/CompleteProfileBanner";
 import { useLocation } from "react-router-dom";
 
 interface PageProps {
@@ -18,6 +19,7 @@ export const Page: React.FC<PageProps> = ({ children }) => {
   return (
     <div className="flex flex-col items-center w-full min-h-screen">
       <div className="w-full z-50">
+        <CompleteProfileBanner />
         <Navbar />
       </div>
 

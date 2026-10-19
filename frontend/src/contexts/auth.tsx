@@ -36,8 +36,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Memoised so consumers can safely list these in effect dependency arrays -
     // a fresh function identity each render would otherwise re-fire those effects.
     const login = useCallback(async (loginRequestData: UserLoginRequest): Promise<UserResponse> => {
-        const { id, name, email } = await loginUser({email: loginRequestData.email, password: loginRequestData.password});
-        const userData = {id: id, name: name, email: email}
+        const { id, email, display_name, profile } = await loginUser({email: loginRequestData.email, password: loginRequestData.password});
+        const userData = {id: id, email: email, display_name: display_name, profile: profile}
         setUser(userData);
         return userData
     }, []);

@@ -25,6 +25,7 @@ class TestRegister:
         assert response.status_code == 201
         body = response.json()
         assert body["email"] == "new@example.com"
+        assert body["display_name"] == "new@example.com"
         assert body["profile"] == {"name": None, "is_profile_completed": False}
         assert "password" not in body
 
@@ -94,6 +95,7 @@ class TestCurrentUser:
         assert response.status_code == 200
         body = response.json()
         assert body["email"] == "current@example.com"
+        assert body["display_name"] == "Current User"
         assert body["profile"] == {"name": "Current User", "is_profile_completed": True}
 
     async def test_missing_cookie_returns_401(self, client: AsyncClient):

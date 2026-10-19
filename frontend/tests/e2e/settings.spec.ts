@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
 
-import { expectOnAccountPage, loginUser, registerUser, uniqueEmail } from './helpers/helpers';
+import { completeProfile, expectOnAccountPage, loginUser, registerUser, uniqueEmail } from './helpers/helpers';
 
 test('user can delete their account from settings', async ({ page }) => {
   const email = uniqueEmail('delete');
 
-  await registerUser(page, { name: 'Delete User', email });
+  await registerUser(page, { email });
+  await completeProfile(page, 'Delete User');
   await expectOnAccountPage(page, 'Delete User');
 
   await page.goto('/settings');

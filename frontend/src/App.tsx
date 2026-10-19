@@ -18,6 +18,7 @@ import { AuthCallback } from "./pages/Auth/AuthCallback";
 import { ForgotPassword } from "./pages/ForgotPassword/ForgotPassword";
 import { ResetPassword } from "./pages/ResetPassword/ResetPassword";
 import { Settings } from "./pages/Settings/Settings";
+import { CompleteProfile } from "./pages/CompleteProfile/CompleteProfile";
 
 function App() {
 
@@ -40,6 +41,7 @@ function App() {
               <Route element={<AuthorizedRoute />}>
                 <Route path="/account" element={<Page children={<Account />} />} />
                 <Route path="/settings" element={<Page children={<Settings />} />} />
+                <Route path="/complete-profile" element={<Page children={<CompleteProfile />} />} />
                 <Route path="/logout" element={<Page children={<Logout />} />} />
               </Route>
 

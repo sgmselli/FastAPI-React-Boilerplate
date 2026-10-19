@@ -111,15 +111,16 @@ class TestCreateUserWithoutPassword:
         with pytest.raises(UserAlreadyExists):
             await UserService(db_session).create_user_without_password(user_create)
 
-    async def test_persists_profile_with_prefilled_name(self, db_session: AsyncSession):
+    async def test_persists_an_empty_profile(self, db_session: AsyncSession):
         user_create = UserCreate(email="google-profile@example.com", google_id="google-profile")
-        created = await UserService(db_session).create_user_without_password(user_create, "Google User")
+        created = await UserService(db_session).create_user_without_password(user_create)
         user_id = created.id
         await db_session.commit()
         db_session.expire_all()
 
         found = await UserService(db_session).get_user_by_id(user_id)
-        assert found.profile.name == "Google User"
+        assert found.profile is not None
+        assert found.profile.name is None
 
 
 class TestLinkGoogleId:

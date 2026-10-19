@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 
 import { API_URL as API } from '../../test/constants'
 import { server } from '../../test/setup'
+import { testUser } from '../../test/handlers'
 import { renderWithProviders, screen, waitFor } from '../../test/renderWithProviders'
 import { Login } from './Login'
 
@@ -56,7 +57,7 @@ describe('Login', () => {
     server.use(
       http.post(`${API}/auth/login`, async ({ request }) => {
         submitted = await request.text()
-        return HttpResponse.json({ id: 1, name: 'Test User', email: 'test@example.com' })
+        return HttpResponse.json(testUser)
       }),
     )
 

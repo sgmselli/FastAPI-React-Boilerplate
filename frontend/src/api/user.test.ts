@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { API_URL as API } from '../test/constants'
 import { server } from '../test/setup'
 import { testUser } from '../test/handlers'
-import { deleteCurrentUser, getCurrentUser, loginUser, logoutUser, registerUser, updateCurrentUser } from './user'
+import { deleteCurrentUser, getCurrentUser, loginUser, logoutUser, registerUser } from './user'
 
 describe('registerUser', () => {
   it('maps confirmPassword to the snake_case confirm_password the API expects', async () => {
@@ -18,14 +18,12 @@ describe('registerUser', () => {
     )
 
     await registerUser({
-      name: 'Test User',
       email: 'test@example.com',
       password: 'Str0ng!Pass',
       confirmPassword: 'Str0ng!Pass',
     })
 
     expect(body).toEqual({
-      name: 'Test User',
       email: 'test@example.com',
       password: 'Str0ng!Pass',
       confirm_password: 'Str0ng!Pass',
@@ -35,7 +33,6 @@ describe('registerUser', () => {
 
   it('returns the created user', async () => {
     const user = await registerUser({
-      name: 'Test User',
       email: 'test@example.com',
       password: 'Str0ng!Pass',
       confirmPassword: 'Str0ng!Pass',
@@ -53,8 +50,7 @@ describe('registerUser', () => {
 
     await expect(
       registerUser({
-        name: 'Test User',
-        email: 'test@example.com',
+          email: 'test@example.com',
         password: 'Str0ng!Pass',
         confirmPassword: 'Str0ng!Pass',
       }),
@@ -126,41 +122,6 @@ describe('getCurrentUser', () => {
   it('returns the current user', async () => {
     const user = await getCurrentUser()
     expect(user).toEqual(testUser)
-  })
-})
-
-describe('updateCurrentUser', () => {
-  it('sends a PATCH with only the name', async () => {
-    let body: Record<string, unknown> | undefined
-
-    server.use(
-      http.patch(`${API}/user/current`, async ({ request }) => {
-        body = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json({ ...testUser, name: 'New Name' })
-      }),
-    )
-
-    await updateCurrentUser({ name: 'New Name' })
-
-    expect(body).toEqual({ name: 'New Name' })
-  })
-
-  it('returns the updated user', async () => {
-    const user = await updateCurrentUser({ name: 'New Name' })
-    expect(user).toEqual({ ...testUser, name: 'New Name' })
-  })
-
-  it('rejects when the API returns a validation error', async () => {
-    server.use(
-      http.patch(`${API}/user/current`, () =>
-        HttpResponse.json(
-          { detail: [{ loc: ['body', 'name'], msg: 'Name is invalid' }] },
-          { status: 422 },
-        ),
-      ),
-    )
-
-    await expect(updateCurrentUser({ name: 'Bad@Name' })).rejects.toThrow()
   })
 })
 

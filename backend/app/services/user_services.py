@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 
 from fastapi import Depends
-from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -84,7 +83,7 @@ class UserService:
 
         return user
 
-    async def create_user_without_password(self, user_create: UserCreate, name: str | None = None) -> User:
+    async def create_user_without_password(self, user_create: UserCreate) -> User:
         email = user_create.email.strip().lower()
 
         result = await self.session.execute(select(User).where(User.email == email))
@@ -92,17 +91,9 @@ class UserService:
         if existing:
             raise UserAlreadyExists(email)
 
-        # A name from a third party (e.g. Google) only prefills the profile when
-        # it passes our own validation - otherwise the user sets it later.
-        try:
-            profile_create = UserProfileCreate(name=name)
-        except ValidationError:
-            Logger.log(LogLevel.INFO, "Name from third party failed validation. Leaving profile name empty.")
-            profile_create = UserProfileCreate()
-
         user = User(
             email=email,
-            profile=UserProfile(**profile_create.model_dump()),
+            profile=UserProfile(**UserProfileCreate().model_dump()),
             **user_create.model_dump(exclude={"email", "password", "confirm_password"})
         )
 

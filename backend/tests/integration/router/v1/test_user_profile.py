@@ -15,6 +15,7 @@ class TestUpdateCurrentUserProfile:
         assert response.status_code == 200
         body = response.json()
         assert body["profile"] == {"name": "New Name", "is_profile_completed": True}
+        assert body["display_name"] == "New Name"
         assert body["email"] == "update@example.com"
         assert "password" not in body
 
