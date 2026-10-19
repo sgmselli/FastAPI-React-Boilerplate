@@ -82,6 +82,20 @@ export const Login: React.FC = () => {
                         }
 
                         <div className="flex flex-col space-y-5">
+                            <button
+                                onClick={handleGoogleLogin}
+                                disabled={loading}
+                                className="btn btn-lg text-[15px] surface-color-bg text-color font-medium rounded-lg border-gray-300 hover:bg-gray-100! btn-block mb-0 flex items-center justify-center gap-4"
+                                aria-label="Sign in with Google button"
+                            >
+                                <Google />
+                                Sign in with Google
+                            </button>
+
+                            <div className="h-px divider my-6 before:bg-gray-300 after:bg-gray-300 text-gray-400">
+                                OR
+                            </div>
+
                             <label className="form-control">
                                 <input
                                     type="email"
@@ -143,20 +157,6 @@ export const Login: React.FC = () => {
                                         :
                                             <p>Sign in</p>
                                     }
-                                </button>
-
-                                <div className="h-px divider before:bg-gray-300 after:bg-gray-300 text-gray-400">
-                                    OR
-                                </div>
-
-                                <button
-                                    onClick={handleGoogleLogin}
-                                    disabled={loading}
-                                    className="btn btn-lg text-[15px] surface-color-bg text-color font-medium rounded-lg border-black btn-block flex items-center justify-center gap-4"
-                                    aria-label="Sign in with Google button"
-                                >
-                                    <Google />
-                                    Sign in with Google
                                 </button>
                             </div>
 

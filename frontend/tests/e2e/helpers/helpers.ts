@@ -19,6 +19,7 @@ export async function registerUser(
   await page.getByRole('textbox', { name: /Register email input/i }).fill(email);
   await page.getByRole('textbox', { name: /Register password input/i }).fill(password);
   await page.getByRole('textbox', { name: /Confirm password input/i }).fill(password);
+  await page.getByRole('checkbox', { name: /Agree to policies checkbox/i }).check();
 
   await page.getByRole('button', { name: /Create account button/i }).click();
 }

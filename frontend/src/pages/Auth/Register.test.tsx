@@ -27,6 +27,7 @@ async function fillForm() {
   await userEvent.type(screen.getByLabelText('Register email input'), 'test@example.com')
   await userEvent.type(screen.getByLabelText('Register password input'), 'Str0ng!Pass')
   await userEvent.type(screen.getByLabelText('Confirm password input'), 'Str0ng!Pass')
+  await userEvent.click(screen.getByLabelText('Agree to policies checkbox'))
 }
 
 describe('Register', () => {
@@ -37,6 +38,66 @@ describe('Register', () => {
     expect(screen.getByLabelText('Register email input')).toBeInTheDocument()
     expect(screen.getByLabelText('Register password input')).toBeInTheDocument()
     expect(screen.getByLabelText('Confirm password input')).toBeInTheDocument()
+  })
+
+  it('starts with the policies checkbox unticked and Create account disabled', () => {
+    renderWithProviders(<Register />, { route: '/register' })
+
+    expect(screen.getByLabelText('Agree to policies checkbox')).not.toBeChecked()
+    expect(screen.getByLabelText('Create account button')).toBeDisabled()
+    expect(screen.getByLabelText('Create account button')).toHaveClass('opacity-50')
+  })
+
+  it('leaves Google sign up available without the checkbox', () => {
+    // Google's own consent screen shows the privacy policy and terms links
+    renderWithProviders(<Register />, { route: '/register' })
+
+    expect(screen.getByLabelText('Agree to policies checkbox')).not.toBeChecked()
+    expect(screen.getByLabelText('Sign up with Google button')).toBeEnabled()
+  })
+
+  it('enables Create account once the policies are agreed to', async () => {
+    renderWithProviders(<Register />, { route: '/register' })
+
+    await userEvent.click(screen.getByLabelText('Agree to policies checkbox'))
+
+    expect(screen.getByLabelText('Create account button')).toBeEnabled()
+    expect(screen.getByLabelText('Create account button')).not.toHaveClass('opacity-50')
+
+    await userEvent.click(screen.getByLabelText('Agree to policies checkbox'))
+
+    expect(screen.getByLabelText('Create account button')).toBeDisabled()
+  })
+
+  it('does not register when the policies have not been agreed to', async () => {
+    let called = false
+    server.use(
+      http.post(`${API}/user/register`, () => {
+        called = true
+        return HttpResponse.json(withProfileName(null), { status: 201 })
+      }),
+    )
+
+    renderWithProviders(<Register />, { route: '/register' })
+    await userEvent.type(screen.getByLabelText('Register email input'), 'test@example.com')
+    await userEvent.type(screen.getByLabelText('Register password input'), 'Str0ng!Pass')
+    await userEvent.type(screen.getByLabelText('Confirm password input'), 'Str0ng!Pass')
+    await userEvent.click(screen.getByLabelText('Create account button'))
+
+    expect(called).toBe(false)
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it('links to both policies in a new tab so the form is not lost', () => {
+    renderWithProviders(<Register />, { route: '/register' })
+
+    const privacy = screen.getByRole('link', { name: 'Privacy Policy' })
+    const terms = screen.getByRole('link', { name: 'Terms and Conditions' })
+
+    expect(privacy).toHaveAttribute('href', '/privacy-policy')
+    expect(privacy).toHaveAttribute('target', '_blank')
+    expect(terms).toHaveAttribute('href', '/terms-and-conditions')
+    expect(terms).toHaveAttribute('target', '_blank')
   })
 
   it('registers, logs the user in, then navigates', async () => {
