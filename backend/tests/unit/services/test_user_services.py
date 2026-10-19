@@ -7,14 +7,14 @@ from app.exceptions.user import (
     UserIdDoesNotExist,
 )
 from app.models.user import User
-from app.schema.user import UserCreate, UserUpdate
+from app.schema.user import UserCreate
 from app.services.user_services import UserService
 from tests.unit.mocks import make_mock_session
 
 
 class TestGetUserById:
     async def test_returns_user_when_found(self):
-        fake_user = User(id=1, email="a@example.com", name="A")
+        fake_user = User(id=1, email="a@example.com")
         session = make_mock_session(first_return=fake_user)
 
         result = await UserService(session).get_user_by_id(1)
@@ -30,7 +30,7 @@ class TestGetUserById:
 
 class TestGetUserByEmail:
     async def test_returns_user_when_found(self):
-        fake_user = User(id=1, email="a@example.com", name="A")
+        fake_user = User(id=1, email="a@example.com")
         session = make_mock_session(first_return=fake_user)
 
         result = await UserService(session).get_user_by_email("a@example.com")
@@ -46,7 +46,7 @@ class TestGetUserByEmail:
 
 class TestGetUserByGoogleId:
     async def test_returns_user_when_found(self):
-        fake_user = User(id=1, email="a@example.com", name="A", google_id="g-1")
+        fake_user = User(id=1, email="a@example.com", google_id="g-1")
         session = make_mock_session(first_return=fake_user)
 
         result = await UserService(session).get_user_by_google_id("g-1")
@@ -68,7 +68,6 @@ class TestCreateUserWithPassword:
         )
         user_create = UserCreate(
             email="New@Example.com",
-            name="New User",
             password="Str0ng!Pass",
             confirm_password="Str0ng!Pass",
         )
@@ -82,12 +81,11 @@ class TestCreateUserWithPassword:
         session.flush.assert_awaited_once()
 
     async def test_raises_without_persisting_when_email_taken(self, mocker):
-        existing = User(id=1, email="dupe@example.com", name="Existing")
+        existing = User(id=1, email="dupe@example.com")
         session = make_mock_session(first_return=existing)
         mocker.patch("app.services.user_services.hash_password")
         user_create = UserCreate(
             email="dupe@example.com",
-            name="New User",
             password="Str0ng!Pass",
             confirm_password="Str0ng!Pass",
         )
@@ -98,13 +96,27 @@ class TestCreateUserWithPassword:
         session.add.assert_not_called()
         session.flush.assert_not_awaited()
 
+    async def test_creates_an_empty_profile_with_the_user(self, mocker):
+        session = make_mock_session(first_return=None)
+        mocker.patch("app.services.user_services.hash_password", return_value="hashed-value")
+        user_create = UserCreate(
+            email="new@example.com",
+            password="Str0ng!Pass",
+            confirm_password="Str0ng!Pass",
+        )
+
+        user = await UserService(session).create_user_with_password(user_create)
+
+        assert user.profile is not None
+        assert user.profile.name is None
+        session.add.assert_called_once_with(user)
+
 
 class TestCreateUserWithoutPassword:
     async def test_persists_user_with_no_password(self):
         session = make_mock_session(first_return=None)
         user_create = UserCreate(
             email="google@example.com",
-            name="Google User",
             google_id="g-2",
         )
 
@@ -116,11 +128,10 @@ class TestCreateUserWithoutPassword:
         session.flush.assert_awaited_once()
 
     async def test_raises_without_persisting_when_email_taken(self):
-        existing = User(id=1, email="dupe2@example.com", name="Existing")
+        existing = User(id=1, email="dupe2@example.com")
         session = make_mock_session(first_return=existing)
         user_create = UserCreate(
             email="dupe2@example.com",
-            name="Google User",
             google_id="g-2",
         )
 
@@ -129,34 +140,19 @@ class TestCreateUserWithoutPassword:
 
         session.add.assert_not_called()
 
+    async def test_creates_an_empty_profile_with_the_user(self):
+        session = make_mock_session(first_return=None)
+        user_create = UserCreate(email="google@example.com", google_id="g-2")
 
-class TestUpdateUser:
-    async def test_applies_new_name_and_flushes(self):
-        user = User(id=1, email="a@example.com", name="Old Name")
-        session = make_mock_session()
+        user = await UserService(session).create_user_without_password(user_create)
 
-        result = await UserService(session).update_user(user, UserUpdate(name="New Name"))
-
-        assert result is user
-        assert user.name == "New Name"
-        session.add.assert_called_once_with(user)
-        session.flush.assert_awaited_once()
-        session.commit.assert_not_awaited()
-
-    async def test_leaves_other_fields_untouched(self):
-        user = User(id=1, email="a@example.com", name="Old Name", password="hash", google_id="g-1")
-        session = make_mock_session()
-
-        await UserService(session).update_user(user, UserUpdate(name="New Name"))
-
-        assert user.email == "a@example.com"
-        assert user.password == "hash"
-        assert user.google_id == "g-1"
+        assert user.profile is not None
+        assert user.profile.name is None
 
 
 class TestLinkGoogleId:
     async def test_sets_google_id_and_flushes(self):
-        user = User(id=1, email="a@example.com", name="A", password="hash")
+        user = User(id=1, email="a@example.com", password="hash")
         session = make_mock_session()
 
         result = await UserService(session).link_google_id(user, "g-1")
@@ -171,7 +167,7 @@ class TestLinkGoogleId:
 
 class TestDeleteUser:
     async def test_deletes_user_and_flushes_without_committing(self):
-        user = User(id=1, email="a@example.com", name="A")
+        user = User(id=1, email="a@example.com")
         session = make_mock_session()
 
         await UserService(session).delete_user(user)

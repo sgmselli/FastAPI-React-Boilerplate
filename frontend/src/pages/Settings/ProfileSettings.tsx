@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { updateCurrentUser } from "../../api/user";
+import { updateCurrentUserProfile } from "../../api/userProfile";
 import { useAuth } from "../../contexts/auth";
 import { useToast } from "../../contexts/toast";
 import { Loading } from "../../components/Loading";
@@ -16,13 +16,13 @@ export const ProfileSettings: React.FC = () => {
     // -----------------------------
     // Form State
     // -----------------------------
-    const [name, setName] = useState<string>(user?.name ?? "");
+    const [name, setName] = useState<string>(user?.profile.name ?? "");
 
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [fieldErrors, setFieldErrors] = useState<FieldErrors<ProfileField>>({});
 
-    const unchanged = name.trim() === (user?.name ?? "");
+    const unchanged = name.trim() === (user?.profile.name ?? "");
 
     // -----------------------------
     // Handle Update Profile
@@ -34,10 +34,10 @@ export const ProfileSettings: React.FC = () => {
         setFieldErrors({});
 
         try {
-            const updatedUser = await updateCurrentUser({ name });
+            const updatedUser = await updateCurrentUserProfile({ name });
             // Keep the session's copy in sync so the navbar shows the new name
             setUser(updatedUser);
-            setName(updatedUser.name);
+            setName(updatedUser.profile.name ?? "");
             showToast("Your profile has been updated.");
         } catch (err: unknown) {
             const { message, fieldErrors } = parseApiError<ProfileField>(err, "Failed to update profile.");

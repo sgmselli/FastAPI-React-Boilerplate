@@ -26,7 +26,7 @@ const Account: React.FC = () => {
             <div
                 className='flex flex-col gap-3'
             >
-                <h1 className='text-2xl md:text-3xl font-semibold text-color'>Welcome, {user.name}</h1>
+                <h1 className='text-2xl md:text-3xl font-semibold text-color'>Welcome, {user.display_name}</h1>
             </div>
         </div>
     )

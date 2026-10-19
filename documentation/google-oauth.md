@@ -14,6 +14,7 @@ Worth understanding before configuring it, because the redirect URI has to match
    - No `google_id` but the email exists → **link** the Google ID to the existing account. This is what lets someone who registered with a password later sign in with Google.
    - Neither → create a new user with no password.
 5. The backend sets `access_token` / `refresh_token` httpOnly cookies and redirects to `{FRONTEND_URL}/auth/callback`, which forwards to the user's destination.
+6. If the user's profile has no name yet, the Google name is **not** saved. It's added to the redirect as a suggestion — `/auth/callback#name=Jane%20Doe` — and [`AuthCallback.tsx`](../frontend/src/pages/Auth/AuthCallback.tsx) prefills it on the complete profile page, where the user can save it, edit it or skip. It travels in the fragment so it never reaches a server or an access log.
 
 ## 1. Create a Google Cloud project
 

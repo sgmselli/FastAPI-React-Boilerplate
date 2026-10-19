@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.exceptions.user import UserAlreadyExists
-from app.schema.user import UserResponse, UserCreate, UserUpdate
+from app.schema.user import UserResponse, UserCreate
 from app.services.user_services import UserService, get_user_service
 from app.models.user import User
 from app.auth.current_user import get_current_user_or_raise_http_error
@@ -15,21 +15,13 @@ router = APIRouter()
 async def get_current_user_data(current_user: User = Depends(get_current_user_or_raise_http_error)):
     return current_user
 
-@router.patch("/current", response_model=UserResponse)
-async def update_current_user(
-    user_update: UserUpdate,
-    current_user: User = Depends(get_current_user_or_raise_http_error),
-    user_service: UserService = Depends(get_user_service)
-):
-    return await user_service.update_user(current_user, user_update)
-
 @router.delete("/current", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_current_user(
     response: Response,
     current_user: User = Depends(get_current_user_or_raise_http_error),
     user_service: UserService = Depends(get_user_service)
 ):
-    user_id, email, name = current_user.id, current_user.email, current_user.name
+    user_id, email, name = current_user.id, current_user.email, current_user.display_name
 
     await user_service.delete_user(current_user)
     delete_tokens(response)
@@ -48,7 +40,7 @@ async def register_user(user_create: UserCreate, user_service: UserService = Dep
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
     try:
-        task_send_welcome_email.delay(user.email, user.name)
+        task_send_welcome_email.delay(user.email, user.display_name)
     except Exception as e:
         Logger.log(LogLevel.ERROR, f"Failed to queue welcome email for '{user.email}': {e}")
 

@@ -3,11 +3,20 @@ import { http, HttpResponse } from 'msw'
 import type { UserResponse } from '../types/user'
 import { API_URL as API } from './constants'
 
-export const testUser: UserResponse = {
-  id: 1,
-  name: 'Test User',
-  email: 'test@example.com',
+/**
+ * The test user with a different profile name - mirrors the backend, where
+ * display_name falls back to the email when no name is set.
+ */
+export function withProfileName(name: string | null): UserResponse {
+  return {
+    id: 1,
+    email: 'test@example.com',
+    display_name: name || 'test@example.com',
+    profile: { name, is_profile_completed: name !== null },
+  }
 }
+
+export const testUser: UserResponse = withProfileName('Test User')
 
 /**
  * Default happy-path handlers. Individual tests override these per-case with
@@ -23,9 +32,9 @@ export const handlers = [
 
   http.post(`${API}/auth/refresh`, () => HttpResponse.json({})),
 
-  http.patch(`${API}/user/current`, async ({ request }) => {
+  http.patch(`${API}/profile/current`, async ({ request }) => {
     const body = (await request.json()) as { name: string }
-    return HttpResponse.json({ ...testUser, name: body.name.trim() })
+    return HttpResponse.json(withProfileName(body.name.trim()))
   }),
 
   http.delete(`${API}/user/current`, () => new HttpResponse(null, { status: 204 })),

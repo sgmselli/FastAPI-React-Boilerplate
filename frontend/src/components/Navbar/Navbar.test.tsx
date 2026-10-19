@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import userEvent from '@testing-library/user-event'
 
 import { API_URL as API } from '../../test/constants'
-import { testUser } from '../../test/handlers'
+import { testUser, withProfileName } from '../../test/handlers'
 import { server } from '../../test/setup'
 import { renderWithProviders, screen } from '../../test/renderWithProviders'
 import { Navbar } from './Navbar'
@@ -27,7 +27,7 @@ describe('Navbar', () => {
 
     expect(screen.queryByRole('link', { name: 'Login' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Open menu/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: testUser.name })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: testUser.display_name })).not.toBeInTheDocument()
   })
 
   describe('when signed out', () => {
@@ -45,7 +45,7 @@ describe('Navbar', () => {
       renderWithProviders(<Navbar />)
 
       await screen.findByRole('link', { name: 'Login' })
-      expect(screen.queryByRole('button', { name: testUser.name })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: testUser.display_name })).not.toBeInTheDocument()
     })
 
     it('reveals a second set of Login/Register links via the mobile menu', async () => {
@@ -64,13 +64,20 @@ describe('Navbar', () => {
     it('renders the account menu with the user\'s name', async () => {
       renderWithProviders(<Navbar />)
 
-      expect(await screen.findByRole('button', { name: new RegExp(testUser.name) })).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: new RegExp(testUser.display_name) })).toBeInTheDocument()
+    })
+
+    it('falls back to the email when the profile has no name', async () => {
+      server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfileName(null))))
+      renderWithProviders(<Navbar />)
+
+      expect(await screen.findByRole('button', { name: /test@example\.com/ })).toBeInTheDocument()
     })
 
     it('does not render Login/Register links or the mobile menu trigger', async () => {
       renderWithProviders(<Navbar />)
 
-      await screen.findByRole('button', { name: new RegExp(testUser.name) })
+      await screen.findByRole('button', { name: new RegExp(testUser.display_name) })
       expect(screen.queryByRole('link', { name: 'Login' })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /Open menu/i })).not.toBeInTheDocument()
     })

@@ -6,21 +6,21 @@ import { Route, Routes } from 'react-router-dom'
 import AuthorizedRoute from '../../components/ProtectedRoutes/AuthorizedRoute'
 import { useAuth } from '../../contexts/auth'
 import { API_URL as API } from '../../test/constants'
-import { testUser } from '../../test/handlers'
+import { testUser, withProfileName } from '../../test/handlers'
 import { server } from '../../test/setup'
 import { renderWithProviders, screen, waitFor, within } from '../../test/renderWithProviders'
 import { Settings } from './Settings'
 
-const UPDATE_URL = `${API}/user/current`
+const UPDATE_URL = `${API}/profile/current`
 const RESET_REQUEST_URL = `${API}/auth/password-reset/request`
 
 /** Stands in for the navbar - anything else reading the session's user. */
 function SessionUserName() {
   const { user } = useAuth()
-  return <span data-testid="session-user-name">{user ? user.name : 'none'}</span>
+  return <span data-testid="session-user-name">{user ? user.display_name : 'none'}</span>
 }
 
-async function renderSettings() {
+async function renderSettings(expectedName: string = testUser.display_name) {
   // Rendered behind AuthorizedRoute as in App.tsx - the profile form seeds its
   // input from the user once, so it relies on the guard holding it back until
   // the session has loaded.
@@ -37,7 +37,7 @@ async function renderSettings() {
     </>,
     { route: '/settings' },
   )
-  await waitFor(() => expect(screen.getByLabelText('Name input')).toHaveValue(testUser.name))
+  await waitFor(() => expect(screen.getByLabelText('Name input')).toHaveValue(expectedName))
 }
 
 async function replaceName(name: string) {
@@ -69,7 +69,17 @@ describe('Profile settings', () => {
   it('prefills the name from the current user', async () => {
     await renderSettings()
 
-    expect(screen.getByLabelText('Name input')).toHaveValue(testUser.name)
+    expect(screen.getByLabelText('Name input')).toHaveValue(testUser.display_name)
+  })
+
+  it('leaves the name empty rather than showing the email when no name is set', async () => {
+    // display_name falls back to the email, but the input edits the profile name itself.
+    server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfileName(null))))
+
+    await renderSettings('')
+
+    expect(screen.getByLabelText('Name input')).toHaveValue('')
+    expect(saveButton()).toBeDisabled()
   })
 
   it('shows the current email in a disabled input', async () => {
@@ -85,7 +95,7 @@ describe('Profile settings', () => {
     server.use(
       http.patch(UPDATE_URL, async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json({ ...testUser, name: 'New Name' })
+        return HttpResponse.json(withProfileName('New Name'))
       }),
     )
 
@@ -107,7 +117,7 @@ describe('Profile settings', () => {
     expect(saveButton()).toBeEnabled()
     expect(saveButton()).not.toHaveClass('opacity-50')
 
-    await replaceName(testUser.name)
+    await replaceName(testUser.display_name)
     expect(saveButton()).toBeDisabled()
     expect(saveButton()).toHaveClass('opacity-50')
   })
@@ -117,7 +127,7 @@ describe('Profile settings', () => {
     server.use(
       http.patch(UPDATE_URL, async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json({ ...testUser, name: 'New Name' })
+        return HttpResponse.json(withProfileName('New Name'))
       }),
     )
 
@@ -133,7 +143,7 @@ describe('Profile settings', () => {
 
   it('updates the session user so the rest of the app shows the new name', async () => {
     await renderSettings()
-    expect(screen.getByTestId('session-user-name')).toHaveTextContent(testUser.name)
+    expect(screen.getByTestId('session-user-name')).toHaveTextContent(testUser.display_name)
 
     await replaceName('New Name')
     await userEvent.click(saveButton())
@@ -150,7 +160,7 @@ describe('Profile settings', () => {
     await userEvent.click(saveButton())
 
     await screen.findByText('Failed to update profile.')
-    expect(screen.getByTestId('session-user-name')).toHaveTextContent(testUser.name)
+    expect(screen.getByTestId('session-user-name')).toHaveTextContent(testUser.display_name)
   })
 
   it('shows the name the API saved, not the raw input', async () => {
@@ -472,7 +482,7 @@ describe('Delete account settings', () => {
     const dialog = screen.getByRole('dialog')
     expect(await within(dialog).findByText('Failed to delete your account.')).toBeInTheDocument()
     expect(confirmButton()).toBeEnabled()
-    expect(screen.getByTestId('session-user-name')).toHaveTextContent(testUser.name)
+    expect(screen.getByTestId('session-user-name')).toHaveTextContent(testUser.display_name)
     expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })

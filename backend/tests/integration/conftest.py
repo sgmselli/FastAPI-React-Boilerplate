@@ -14,6 +14,7 @@ from app.core.config import settings
 from app.db.session import get_session
 from app.main import app
 from app.models.user import User
+from app.models.user_profile import UserProfile
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 
@@ -125,9 +126,9 @@ async def make_user(db_session: AsyncSession, shared_password_hash: str):
     ) -> User:
         user = User(
             email=email.strip().lower(),
-            name=name,
             google_id=google_id,
             password=password,
+            profile=UserProfile(name=name),
         )
         db_session.add(user)
         await db_session.commit()

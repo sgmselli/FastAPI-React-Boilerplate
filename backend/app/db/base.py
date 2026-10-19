@@ -3,3 +3,4 @@ from app.db.base_class import Base
 # Import all data models here
 from app.models.user import User
 from app.models.password_reset_token import PasswordResetToken
+from app.models.user_profile import UserProfile

@@ -8,13 +8,12 @@ import usePageTitle from "../../hooks/usePageTitle";
 import { useAuth } from "../../contexts/auth";
 import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 
-type RegisterField = "email" | "name" | "password" | "confirm_password";
+type RegisterField = "email" | "password" | "confirm_password";
 
 export const Register: React.FC = () => {
     // -----------------------------
     // Form State
     // -----------------------------
-    const [name, setName] = useState<string>("");
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [confirmPassword, setConfirmPassword] = useState<string>("");
@@ -30,7 +29,6 @@ export const Register: React.FC = () => {
 
     const buildUserData = (): UserCreateRequest => {
         return {
-            name,
             email,
             password,
             confirmPassword
@@ -80,23 +78,6 @@ export const Register: React.FC = () => {
                         }
 
                         <div className="flex flex-col space-y-5">
-
-                            <label className="form-control">
-                                <input
-                                    type="text"
-                                    placeholder="Name"
-                                    className={`input input-lg input-bordered w-full text-sm ${fieldErrors.name ? "input-error" : ""}`}
-                                    name="name"
-                                    autoComplete="name"
-                                    aria-label="Name input"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    required
-                                />
-                                {fieldErrors.name && (
-                                    <p className="text-red-500 text-sm mt-1">{fieldErrors.name}</p>
-                                )}
-                            </label>
 
                             <label className="form-control">
                                 <input

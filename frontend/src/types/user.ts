@@ -1,5 +1,6 @@
+import type { UserProfileResponse } from "./userProfile";
+
 export interface UserCreateRequest {
-    name: string;
     email: string;
     password: string;
     confirmPassword: string;
@@ -10,12 +11,10 @@ export interface UserLoginRequest {
     password: string;
 }
 
-export interface UserUpdateRequest {
-    name: string;
-}
-
 export interface UserResponse {
     id: number;
-    name: string;
     email: string;
+    // The profile name, or the email when no name has been set
+    display_name: string;
+    profile: UserProfileResponse;
 }

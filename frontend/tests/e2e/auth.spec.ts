@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-import { expectOnAccountPage, loginUser, registerUser, uniqueEmail, TEST_PASSWORD } from './helpers/helpers';
+import { completeProfile, expectOnAccountPage, loginUser, registerUser, skipProfile, TEST_PASSWORD, uniqueEmail } from './helpers/helpers';
 
 /**
  * Runs against the real stack (reverse proxy -> backend -> Postgres) started
@@ -13,15 +13,37 @@ import { expectOnAccountPage, loginUser, registerUser, uniqueEmail, TEST_PASSWOR
 test('user can register and lands on their account page', async ({ page }) => {
   const email = uniqueEmail('register');
 
-  await registerUser(page, { name: 'Register User', email });
+  await registerUser(page, { email });
+  await completeProfile(page, 'Register User');
 
   await expectOnAccountPage(page, 'Register User');
+});
+
+test('skipping the profile step falls back to the email, and is offered again on next sign in', async ({ page }) => {
+  const email = uniqueEmail('skip');
+
+  await registerUser(page, { email });
+  await skipProfile(page);
+
+  await expectOnAccountPage(page, email);
+  await expect(page.getByText('Please complete your profile.')).toBeVisible();
+
+  await page.goto('/logout');
+  await page.waitForURL('**/login');
+
+  await loginUser(page, { email });
+
+  // Still no name, so the optional step comes round again before the account page
+  await completeProfile(page, 'Skip User');
+  await expectOnAccountPage(page, 'Skip User');
+  await expect(page.getByText('Please complete your profile.')).toBeHidden();
 });
 
 test('registered user can sign in', async ({ page }) => {
   const email = uniqueEmail('login');
 
-  await registerUser(page, { name: 'Login User', email });
+  await registerUser(page, { email });
+  await completeProfile(page, 'Login User');
   await expectOnAccountPage(page, 'Login User');
 
   // Full round trip: sign out, then back in with the same credentials.
@@ -36,7 +58,8 @@ test('registered user can sign in', async ({ page }) => {
 test('signing in with the wrong password shows an error and stays on the login page', async ({ page }) => {
   const email = uniqueEmail('badpass');
 
-  await registerUser(page, { name: 'Bad Pass User', email });
+  await registerUser(page, { email });
+  await completeProfile(page, 'Bad Pass User');
   await page.goto('/logout');
   await page.waitForURL('**/login');
 
@@ -58,13 +81,14 @@ test('signing in with an unknown email gives the same error as a wrong password'
 test('registering with an already-used email is rejected', async ({ page }) => {
   const email = uniqueEmail('duplicate');
 
-  await registerUser(page, { name: 'First User', email });
+  await registerUser(page, { email });
+  await completeProfile(page, 'First User');
   await expectOnAccountPage(page, 'First User');
 
   await page.goto('/logout');
   await page.waitForURL('**/login');
 
-  await registerUser(page, { name: 'Second User', email });
+  await registerUser(page, { email });
 
   await expect(page.getByText(/already taken/i)).toBeVisible();
 });
@@ -72,7 +96,8 @@ test('registering with an already-used email is rejected', async ({ page }) => {
 test('logging out clears the session', async ({ page }) => {
   const email = uniqueEmail('logout');
 
-  await registerUser(page, { name: 'Logout User', email });
+  await registerUser(page, { email });
+  await completeProfile(page, 'Logout User');
   await expectOnAccountPage(page, 'Logout User');
 
   await page.goto('/logout');

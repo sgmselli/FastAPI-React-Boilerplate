@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from starlette.responses import RedirectResponse
 
@@ -41,7 +43,6 @@ async def auth_google_callback(
                 Logger.log(LogLevel.INFO, "Google ID does not exist for user. Creating user.")
                 user_create = UserCreate(
                     email=email,
-                    name=name,
                     google_id=google_id
                 )
                 user = await user_service.create_user_without_password(user_create)
@@ -49,8 +50,14 @@ async def auth_google_callback(
         access_token = create_access_token({"sub": str(user.id)})
         refresh_token = create_refresh_token({"sub": str(user.id)})
 
+        callback_url = f"{settings.frontend_url}/auth/callback"
+        # The Google name is only a suggestion for the complete profile page - the
+        # user decides whether to save it. A fragment keeps it out of access logs.
+        if name and not user.profile.name:
+            callback_url += f"#name={quote(name)}"
+
         redirect = RedirectResponse(
-            url=f"{settings.frontend_url}/auth/callback",
+            url=callback_url,
             status_code=status.HTTP_302_FOUND
         )
 

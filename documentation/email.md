@@ -42,6 +42,8 @@ The HTML for each template is kept in [`documentation/email-templates/`](email-t
 | Password reset confirmation | [`password-reset-confirmation.html`](email-templates/password-reset-confirmation.html) | `name` |
 | Account deleted | [`account-deleted.html`](email-templates/account-deleted.html) | `name` |
 
+`name` is always filled in, but it isn't always a name. It comes from [`User.display_name`](../backend/app/models/user.py), which is the profile name when the user has set one and their email address when they haven't. A new account has no profile name yet, so the welcome email always gets the email address - word the templates so "Hi jane@example.com" still reads naturally.
+
 > **The repository copies are for tracking only.** Brevo is the source of truth — the live template is whatever the dashboard holds, and nothing in this codebase reads these files at runtime. They exist so the markup has a history and can be reviewed in a pull request. Edit the real template in the Brevo UI; if you change the HTML meaningfully, paste it back here so the two don't drift.
 
 For each one:
@@ -101,7 +103,7 @@ Registration is the one flow that sends email today, and it's a useful model for
 1. A user posts to `/api/v1/register`. [`user.py`](../backend/app/router/v1/user.py) creates the row, then calls:
 
    ```python
-   task_send_welcome_email.delay(user.email, user.name)
+   task_send_welcome_email.delay(user.email, user.display_name)
    ```
 
 2. `.delay()` serialises the arguments, pushes a message onto Redis, and returns immediately. The 201 goes back to the user without waiting for Brevo.
@@ -116,7 +118,7 @@ The `.delay()` call is wrapped in a `try`/`except` that logs and continues. The 
 
 Password reset follows the same path, and sends twice.
 
-**The link.** `POST /api/v1/auth/password-reset/request` queues `task_send_password_reset_email` with the recipient, their name, and a fully built URL. The router never sends a bare token — [`PasswordResetTokenService.get_reset_url`](../backend/app/services/password_reset_token_services.py) assembles `{frontend_url}/password-reset#token=...`, so the route structure lives in one place and the token sits in the URL fragment, where it never reaches a server and can't land in an access log.
+**The link.** `POST /api/v1/auth/password-reset/request` queues `task_send_password_reset_email` with the recipient, their display name, and a fully built URL. The router never sends a bare token — [`PasswordResetTokenService.get_reset_url`](../backend/app/services/password_reset_token_services.py) assembles `{frontend_url}/password-reset#token=...`, so the route structure lives in one place and the token sits in the URL fragment, where it never reaches a server and can't land in an access log.
 
 The email is queued whether or not the address has an account, and the API returns the same response either way — anything else would let someone check which addresses are registered.
 
@@ -124,7 +126,7 @@ The email is queued whether or not the address has an account, and the API retur
 
 ## The account deleted email
 
-`DELETE /api/v1/user/current` queues `task_send_account_deleted_email` with the user's email and name once the row is deleted. Both are read before the delete, since the task can't look the user up afterwards - there's nothing left to look up.
+`DELETE /api/v1/user/current` queues `task_send_account_deleted_email` with the user's email and display name once the row is deleted. Both are read before the delete, since the task can't look the user up afterwards - there's nothing left to look up.
 
 Like the password reset confirmation it carries no link. It's the last thing the address hears from the app, and its job is to tell someone their account is gone if they didn't do it themselves.
 
