@@ -17,6 +17,7 @@ export const Register: React.FC = () => {
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [confirmPassword, setConfirmPassword] = useState<string>("");
+    const [agreedToPolicies, setAgreedToPolicies] = useState<boolean>(false);
 
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
@@ -79,6 +80,20 @@ export const Register: React.FC = () => {
 
                         <div className="flex flex-col space-y-5">
 
+                            <button
+                                onClick={handleGoogleRegister}
+                                disabled={loading}
+                                className="btn btn-lg text-[15px] surface-color-bg text-color font-medium rounded-lg border-gray-300 hover:bg-gray-100! btn-block mb-0 flex items-center justify-center gap-4"
+                                aria-label="Sign up with Google button"
+                            >
+                                <Google />
+                                Sign up with Google
+                            </button>
+
+                            <div className="h-px divider my-6 before:bg-gray-300 after:bg-gray-300 text-gray-400">
+                                OR
+                            </div>
+
                             <label className="form-control">
                                 <input
                                     type="email"
@@ -130,12 +145,31 @@ export const Register: React.FC = () => {
                                 )}
                             </label>
 
+                            <label className="flex items-start gap-3 text-[15px] text-gray-700 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="checkbox checkbox-sm mt-0.5"
+                                    name="agree_to_policies"
+                                    aria-label="Agree to policies checkbox"
+                                    checked={agreedToPolicies}
+                                    onChange={(e) => setAgreedToPolicies(e.target.checked)}
+                                    required
+                                />
+                                <span>
+                                    By registering you agree to our{" "}
+                                    {/* New tab, so following a link doesn't lose what's been typed */}
+                                    <Link to="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400">Privacy Policy</Link>
+                                    {" "}and{" "}
+                                    <Link to="/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400">Terms and Conditions</Link>.
+                                </span>
+                            </label>
+
                             <div className="card-actions pt-4 flex flex-col gap-4">
                                 <button
                                     type="submit"
                                     onClick={handleRegister}
-                                    disabled={loading}
-                                    className="btn btn-lg text-[15px] fastapi-color-bg surface-color font-medium rounded-lg btn-block"
+                                    disabled={loading || !agreedToPolicies}
+                                    className={`btn btn-lg text-[15px] fastapi-color-bg surface-color font-medium rounded-lg btn-block ${!agreedToPolicies && !loading ? "opacity-50" : ""}`}
                                     aria-label="Create account button"
                                 >
                                     {
@@ -146,20 +180,6 @@ export const Register: React.FC = () => {
                                             :
                                             <p>Create account</p>
                                     }
-                                </button>
-
-                                <div className="h-px divider before:bg-gray-300 after:bg-gray-300 text-gray-400">
-                                    OR
-                                </div>
-
-                                <button
-                                    onClick={handleGoogleRegister}
-                                    disabled={loading}
-                                    className="btn btn-lg text-[15px] surface-color-bg text-color font-medium rounded-lg border-black btn-block flex items-center justify-center gap-4"
-                                    aria-label="Sign up with Google button"
-                                >
-                                    <Google />
-                                    Sign up with Google
                                 </button>
                             </div>
 

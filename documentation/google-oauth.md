@@ -28,6 +28,7 @@ Credentials can't be created until this exists.
 1. **APIs & Services** → **OAuth consent screen**.
 2. Choose **External** unless everyone signing in belongs to your Google Workspace organisation.
 3. Fill in the app name, a user support email, and a developer contact email. Nothing else is required to start.
+   - Before going live, also add your **privacy policy** and **terms of service** links under **Branding** (`https://yourdomain.com/privacy-policy` and `https://yourdomain.com/terms-and-conditions`). The register page's "agree to our policies" checkbox only applies to email sign up - Google sign up skips it, so these links on Google's consent screen are where those users see the policies.
 4. On the **Scopes** step, the defaults are enough — the backend requests `openid email profile`, all of which are non-sensitive and need no verification.
 5. While the app is in **Testing**, only accounts you list as test users can sign in. Add your own Google account here, or you'll be blocked at the consent screen. Publishing the app removes that restriction.
 
