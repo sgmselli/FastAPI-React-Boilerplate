@@ -14,6 +14,9 @@ class TestSettings(BaseAppSettings):
     refresh_secret_key: str = "test-refresh-secret"
     session_secret_key: str = "test-session-secret"
     otp_secret_key: str = "test-otp-secret"
+    # Every code is 000000 under test, so e2e can complete registration without
+    # reading an email. Never set this outside TestSettings.
+    otp_fixed_code: str = "000000"
     redis_host: str = "redis"
     redis_port: int = 6379
     redis_db: int = 0

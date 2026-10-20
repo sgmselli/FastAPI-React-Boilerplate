@@ -28,6 +28,7 @@ class BaseAppSettings(BaseSettings):
     otp_expire_minutes: int = 10
     otp_max_attempts: int = 5
     otp_resend_cooldown_seconds: int = 60
+    otp_fixed_code: str | None = None
 
     debug: bool | None = None
     frontend_url: str | None = None

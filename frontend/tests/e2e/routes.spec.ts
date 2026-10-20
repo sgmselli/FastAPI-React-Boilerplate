@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-import { completeProfile, expectOnAccountPage, registerUser, uniqueEmail } from './helpers/helpers';
+import { completeProfile, expectOnAccountPage, registerUser, uniqueEmail, verifyEmail } from './helpers/helpers';
 
 test('unauthenticated visit to a protected route redirects to login', async ({ page }) => {
   await page.goto('/account');
@@ -12,6 +12,7 @@ test('authenticated user visiting login is redirected away', async ({ page }) =>
   const email = uniqueEmail('unauthguard');
 
   await registerUser(page, { email });
+  await verifyEmail(page);
   await completeProfile(page, 'Guard User');
   await expectOnAccountPage(page, 'Guard User');
 

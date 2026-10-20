@@ -88,6 +88,9 @@ class OneTimePasswordService:
         return datetime.now(timezone.utc) >= cooldown_cutoff
 
     def _generate_raw_code(self) -> str:
+        if settings.otp_fixed_code:
+            return settings.otp_fixed_code
+
         CODE_DIGITS = 6
         return f"{secrets.randbelow(10 ** CODE_DIGITS):0{CODE_DIGITS}d}"
 

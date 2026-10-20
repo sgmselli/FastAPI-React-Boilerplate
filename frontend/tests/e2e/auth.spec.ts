@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-import { completeProfile, expectOnAccountPage, loginUser, registerUser, skipProfile, TEST_PASSWORD, uniqueEmail } from './helpers/helpers';
+import { completeProfile, expectOnAccountPage, loginUser, registerUser, skipProfile, TEST_PASSWORD, uniqueEmail, verifyEmail } from './helpers/helpers';
 
 /**
  * Runs against the real stack (reverse proxy -> backend -> Postgres) started
@@ -14,15 +14,43 @@ test('user can register and lands on their account page', async ({ page }) => {
   const email = uniqueEmail('register');
 
   await registerUser(page, { email });
+  await verifyEmail(page);
   await completeProfile(page, 'Register User');
 
   await expectOnAccountPage(page, 'Register User');
+});
+
+test('a new account must be verified before it can sign in', async ({ page }) => {
+  const email = uniqueEmail('unverified');
+
+  await registerUser(page, { email });
+  await page.waitForURL('**/verify-email');
+  await expect(page.getByText(email)).toBeVisible();
+
+  // Signing in before entering the code brings them straight back to it
+  await loginUser(page, { email });
+  await page.waitForURL('**/verify-email');
+
+  await verifyEmail(page);
+  await completeProfile(page, 'Verified User');
+  await expectOnAccountPage(page, 'Verified User');
+});
+
+test('a wrong verification code shows an error and does not sign in', async ({ page }) => {
+  const email = uniqueEmail('wrongcode');
+
+  await registerUser(page, { email });
+  await verifyEmail(page, '123456');
+
+  await expect(page.getByText(/invalid or has expired/i)).toBeVisible();
+  await expect(page).toHaveURL(/\/verify-email/);
 });
 
 test('skipping the profile step falls back to the email, and is offered again on next sign in', async ({ page }) => {
   const email = uniqueEmail('skip');
 
   await registerUser(page, { email });
+  await verifyEmail(page);
   await skipProfile(page);
 
   await expectOnAccountPage(page, email);
@@ -43,6 +71,7 @@ test('registered user can sign in', async ({ page }) => {
   const email = uniqueEmail('login');
 
   await registerUser(page, { email });
+  await verifyEmail(page);
   await completeProfile(page, 'Login User');
   await expectOnAccountPage(page, 'Login User');
 
@@ -59,6 +88,7 @@ test('signing in with the wrong password shows an error and stays on the login p
   const email = uniqueEmail('badpass');
 
   await registerUser(page, { email });
+  await verifyEmail(page);
   await completeProfile(page, 'Bad Pass User');
   await page.goto('/logout');
   await page.waitForURL('**/login');
@@ -82,6 +112,7 @@ test('registering with an already-used email is rejected', async ({ page }) => {
   const email = uniqueEmail('duplicate');
 
   await registerUser(page, { email });
+  await verifyEmail(page);
   await completeProfile(page, 'First User');
   await expectOnAccountPage(page, 'First User');
 
@@ -97,6 +128,7 @@ test('logging out clears the session', async ({ page }) => {
   const email = uniqueEmail('logout');
 
   await registerUser(page, { email });
+  await verifyEmail(page);
   await completeProfile(page, 'Logout User');
   await expectOnAccountPage(page, 'Logout User');
 

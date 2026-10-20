@@ -41,6 +41,15 @@ export const handlers = [
 
   http.post(`${API}/user/register`, () => HttpResponse.json(testUser, { status: 201 })),
 
+  http.post(`${API}/auth/otp/verify`, () => HttpResponse.json(testUser)),
+
+  http.post(`${API}/auth/otp/resend`, () =>
+    HttpResponse.json(
+      { message: "If that account still needs verifying, we've sent a new code." },
+      { status: 202 },
+    ),
+  ),
+
   http.post(`${API}/auth/password-reset/request`, () =>
     HttpResponse.json(
       { message: "If an account exists for that email, we've sent a password reset link." },

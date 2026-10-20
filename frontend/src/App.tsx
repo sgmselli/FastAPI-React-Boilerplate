@@ -19,6 +19,7 @@ import { ForgotPassword } from "./pages/ForgotPassword/ForgotPassword";
 import { ResetPassword } from "./pages/ResetPassword/ResetPassword";
 import { Settings } from "./pages/Settings/Settings";
 import { CompleteProfile } from "./pages/CompleteProfile/CompleteProfile";
+import { VerifyEmail } from "./pages/VerifyEmail/VerifyEmail";
 
 function App() {
 
@@ -50,6 +51,7 @@ function App() {
                 <Route path="/login" element={<Page children={<Login />} />} />
                 <Route path="/register" element={<Page children={<Register />} />} />
                 <Route path="/forgot-password" element={<Page children={<ForgotPassword />} />} />
+                <Route path="/verify-email" element={<Page children={<VerifyEmail />} />} />
               </Route>
           </Routes>
         </ToastProvider>

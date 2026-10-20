@@ -5,7 +5,6 @@ import { registerUser } from "../../api/user";
 import type { UserCreateRequest } from "../../types/user";
 import { Loading } from "../../components/Loading";
 import usePageTitle from "../../hooks/usePageTitle";
-import { useAuth } from "../../contexts/auth";
 import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 
 type RegisterField = "email" | "password" | "confirm_password";
@@ -24,8 +23,6 @@ export const Register: React.FC = () => {
 
     const [fieldErrors, setFieldErrors] = useState<FieldErrors<RegisterField>>({});
 
-    const { login } = useAuth();
-
     const navigate = useNavigate();
 
     const buildUserData = (): UserCreateRequest => {
@@ -42,8 +39,8 @@ export const Register: React.FC = () => {
         setFieldErrors({});
         try {
             await registerUser(buildUserData());
-            await login({email, password});
-            navigate("/auth/callback");
+            // The account stays inactive until the emailed code is entered
+            navigate("/verify-email", { state: { email } });
         } catch (err: unknown) {
             const { message, fieldErrors } = parseApiError<RegisterField>(err, "Failed to create account.");
             setError(message);

@@ -89,6 +89,52 @@ describe('Login', () => {
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 
+  it('sends an unverified user to verify their email with a fresh code', async () => {
+    let resendBody: Record<string, unknown> | undefined
+    server.use(
+      http.post(`${API}/auth/login`, () =>
+        HttpResponse.json({ detail: 'Please verify your email.' }, { status: 403 }),
+      ),
+      http.post(`${API}/auth/otp/resend`, async ({ request }) => {
+        resendBody = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ message: 'sent' }, { status: 202 })
+      }),
+    )
+
+    renderWithProviders(<Login />, { route: '/login' })
+    await fillForm()
+
+    await userEvent.click(screen.getByLabelText('Sign in button'))
+
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith('/verify-email', {
+        state: { email: 'test@example.com' },
+      }),
+    )
+    expect(resendBody).toEqual({ email: 'test@example.com' })
+    expect(screen.queryByText('Please verify your email.')).not.toBeInTheDocument()
+  })
+
+  it('still sends an unverified user to verify if the resend fails', async () => {
+    server.use(
+      http.post(`${API}/auth/login`, () =>
+        HttpResponse.json({ detail: 'Please verify your email.' }, { status: 403 }),
+      ),
+      http.post(`${API}/auth/otp/resend`, () => new HttpResponse(null, { status: 500 })),
+    )
+
+    renderWithProviders(<Login />, { route: '/login' })
+    await fillForm()
+
+    await userEvent.click(screen.getByLabelText('Sign in button'))
+
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith('/verify-email', {
+        state: { email: 'test@example.com' },
+      }),
+    )
+  })
+
   it('falls back to a generic message when the server sends no detail', async () => {
     server.use(
       http.post(`${API}/auth/login`, () => new HttpResponse(null, { status: 500 })),
