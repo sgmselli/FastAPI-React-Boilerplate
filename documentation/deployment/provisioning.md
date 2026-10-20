@@ -62,6 +62,7 @@ bucket_endpoint_url: https://lon1.digitaloceanspaces.com
 access_secret_key: <random 32+ bytes>
 refresh_secret_key: <random 32+ bytes, different from the above>
 session_secret_key: <random 32+ bytes, different again>
+otp_secret_key: <random 32+ bytes, different again>
 
 google_client_id: <from Google Cloud Console>
 google_client_secret: <from Google Cloud Console>
@@ -77,13 +78,15 @@ from_email: noreply@yourdomain.com
 
 > **`database_host` must be `db` and `redis_host` must be `redis`.** These are Docker Compose service names, not hostnames — containers reach each other by service name on the internal network. `localhost` resolves to the container itself and fails.
 
-Generate the three secret keys with:
+Generate the four secret keys with:
 
 ```bash
 openssl rand -hex 32
 ```
 
 Use a different value for each. `SESSION_SECRET_KEY` isn't optional even if you're not using Google sign-in — the Starlette session middleware in [`main.py`](../../backend/app/main.py) needs it to boot.
+
+`OTP_SECRET_KEY` isn't optional either. It keys the hash of the 6-digit codes emailed at registration (see [`one_time_password_services.py`](../../backend/app/services/one_time_password_services.py)). The app boots without it, but every registration then fails with a 500. Changing it later invalidates any codes already sent, so users who are mid-verification will need to request a new one.
 
 The Google credentials come from [Google OAuth](../google-oauth.md); Brevo and the bucket keys from whichever providers you're using. Blank values will boot the app but break those features.
 

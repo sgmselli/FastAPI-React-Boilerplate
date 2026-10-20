@@ -2,7 +2,7 @@
 
 What you get out of the box.
 
-**Authentication** — Register and log in with email and password. JWT access and refresh tokens in httpOnly cookies, with automatic refresh and protected routes.
+**Authentication** — Register and log in with email and password, with new accounts activated by a 6-digit code sent to their email. JWT access and refresh tokens in httpOnly cookies, with automatic refresh and protected routes.
 
 **Google OAuth** — Sign in with Google, linked by email to existing accounts. See [Google OAuth](google-oauth.md).
 
