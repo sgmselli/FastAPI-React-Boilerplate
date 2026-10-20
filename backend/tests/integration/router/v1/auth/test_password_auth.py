@@ -18,6 +18,35 @@ class TestLogin:
         assert response.cookies.get("access_token") is not None
         assert response.cookies.get("refresh_token") is not None
 
+    async def test_unverified_user_returns_403_without_tokens(
+        self, client: AsyncClient, make_user, shared_password: str
+    ):
+        await make_user(email="unverified@example.com", email_verified=False)
+
+        response = await client.post(
+            "/api/v1/auth/login",
+            data={"username": "unverified@example.com", "password": shared_password},
+        )
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Please verify your email."
+        assert response.cookies.get("access_token") is None
+        assert response.cookies.get("refresh_token") is None
+
+    async def test_unverified_user_with_wrong_password_still_gets_401(
+        self, client: AsyncClient, make_user
+    ):
+        # The verification state is only revealed to someone who knows the
+        # password - otherwise the 403 would leak which accounts are pending.
+        await make_user(email="unverified2@example.com", email_verified=False)
+
+        response = await client.post(
+            "/api/v1/auth/login",
+            data={"username": "unverified2@example.com", "password": "WrongPass1!"},
+        )
+
+        assert response.status_code == 401
+
     async def test_wrong_password_returns_401(self, client: AsyncClient, make_user):
         await make_user(email="login2@example.com")
 

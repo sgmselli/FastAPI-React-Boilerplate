@@ -31,6 +31,14 @@ class EmailService:
             data={"name": name},
         )
 
+    def send_otp_email(self, to_email: str, name: str, code: str):
+        return self.client.send_email(
+            template_id=EmailTemplatesId.ONE_TIME_PASSWORD,
+            from_email=settings.from_email,
+            to_email=to_email,
+            data={"name": name, "code": code},
+        )
+
     def send_account_deleted_email(self, to_email: str, name: str):
         return self.client.send_email(
             template_id=EmailTemplatesId.ACCOUNT_DELETED,

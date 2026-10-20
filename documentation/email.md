@@ -41,6 +41,7 @@ The HTML for each template is kept in [`documentation/email-templates/`](email-t
 | Password reset | [`password-reset.html`](email-templates/password-reset.html) | `name`, `reset_url` |
 | Password reset confirmation | [`password-reset-confirmation.html`](email-templates/password-reset-confirmation.html) | `name` |
 | Account deleted | [`account-deleted.html`](email-templates/account-deleted.html) | `name` |
+| Verify email | [`verify-email.html`](email-templates/verify-email.html) | `name`, `code` |
 
 `name` is always filled in, but it isn't always a name. It comes from [`User.display_name`](../backend/app/models/user.py), which is the profile name when the user has set one and their email address when they haven't. A new account has no profile name yet, so the welcome email always gets the email address - word the templates so "Hi jane@example.com" still reads naturally.
 
@@ -86,6 +87,7 @@ class EmailTemplatesId(Enum):
     PASSWORD_RESET = 2
     PASSWORD_RESET_CONFIRMATION = 4
     ACCOUNT_DELETED = 5
+    ONE_TIME_PASSWORD = 6
 ```
 
 These are the IDs from one Brevo account — replace each with the ID your own account assigned in step 2. The values must be integers, since they're passed straight through to Brevo's `template_id` field.
@@ -98,19 +100,19 @@ That's the only application change needed — everything below is already wired 
 
 ## The path a welcome email takes
 
-Registration is the one flow that sends email today, and it's a useful model for adding others.
+It's a useful model for adding other emails.
 
-1. A user posts to `/api/v1/register`. [`user.py`](../backend/app/router/v1/user.py) creates the row, then calls:
+1. A user who has registered posts their code to `/api/v1/auth/otp/verify`. [`otp.py`](../backend/app/router/v1/auth/otp.py) marks the account verified, then calls:
 
    ```python
    task_send_welcome_email.delay(user.email, user.display_name)
    ```
 
-2. `.delay()` serialises the arguments, pushes a message onto Redis, and returns immediately. The 201 goes back to the user without waiting for Brevo.
+2. `.delay()` serialises the arguments, pushes a message onto Redis, and returns immediately. The response goes back to the user without waiting for Brevo.
 3. The `worker` container picks the message up and runs [`task_send_welcome_email`](../backend/app/celery/tasks/email_tasks.py), which calls `email_service.send_welcome_email`.
 4. `EmailService` asks `BrevoEmailClient` for `EmailTemplatesId.WELCOME` with `{"name": name}`, and Brevo renders and delivers it.
 
-The `.delay()` call is wrapped in a `try`/`except` that logs and continues. The user row is already committed by that point, so a Redis outage should cost a welcome email — not turn a successful registration into a 500. The trade-off is that a dropped email is invisible apart from the log line.
+The `.delay()` call is wrapped in a `try`/`except` that logs and continues. The account is already verified by that point, so a Redis outage should cost a welcome email, not turn a successful verification into a 500. The trade-off is that a dropped email is invisible apart from the log line.
 
 **Adding another email** means a template in Brevo, a member on `EmailTemplatesId`, a method on `EmailService`, a task in `email_tasks.py`, and a `.delay()` call at the right moment. Only the last two touch anything outside the email layer.
 
@@ -123,6 +125,12 @@ Password reset follows the same path, and sends twice.
 The email is queued whether or not the address has an account, and the API returns the same response either way — anything else would let someone check which addresses are registered.
 
 **The confirmation.** `POST /api/v1/auth/password-reset/confirm` queues `task_send_password_reset_confirmation_email` after the password changes. It carries no link, deliberately: it's sent after a possible account takeover, so a button to click is exactly what an attacker would want to imitate. Its job is to be the tripwire that tells someone their password changed when they didn't change it.
+
+## The verify email code
+
+`POST /api/v1/user/register` creates the account unverified and queues `task_send_otp_email` with the recipient, their display name and a 6-digit code. `POST /api/v1/auth/otp/resend` queues the same task with a fresh code. The account can't log in until the code is entered at `/api/v1/auth/otp/verify`, and that is also where the welcome email is queued, so only verified addresses get one.
+
+The code expires after 10 minutes (`otp_expire_minutes` in [`base.py`](../backend/app/core/settings/base.py)). If you change that setting, update the wording in the template to match. The inbox preview text deliberately leaves the code out, so it doesn't show on lock screens. For the same reason, keep it out of the subject line too: something like "Verify your email" works.
 
 ## The account deleted email
 

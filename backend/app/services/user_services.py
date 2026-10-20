@@ -83,6 +83,23 @@ class UserService:
 
         return user
 
+    async def mark_email_verified(self, user: User) -> User:
+        user.email_verified_at = datetime.now(timezone.utc)
+
+        self.session.add(user)
+        await self.session.flush()
+
+        return user
+
+    async def remove_password(self, user: User) -> User:
+        user.password = None
+        user.password_updated_at = datetime.now(timezone.utc)
+
+        self.session.add(user)
+        await self.session.flush()
+
+        return user
+
     async def create_user_without_password(self, user_create: UserCreate) -> User:
         email = user_create.email.strip().lower()
 

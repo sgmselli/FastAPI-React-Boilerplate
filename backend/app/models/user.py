@@ -14,6 +14,7 @@ class User(Base):
     google_id = Column(String(200), unique=True, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     password_updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    email_verified_at = Column(DateTime(timezone=True), nullable=True)
 
     profile = relationship(
         UserProfile,
@@ -23,6 +24,10 @@ class User(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+
+    @property
+    def is_email_verified(self) -> bool:
+        return self.email_verified_at is not None
 
     @property
     def display_name(self) -> str:

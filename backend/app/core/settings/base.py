@@ -25,12 +25,16 @@ class BaseAppSettings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 30
     jwt_encryption_algorithm: str = "HS256"
+    otp_expire_minutes: int = 10
+    otp_max_attempts: int = 5
+    otp_resend_cooldown_seconds: int = 60
 
     debug: bool | None = None
     frontend_url: str | None = None
     access_secret_key: str | None = None
     refresh_secret_key: str | None = None
     session_secret_key: str | None = None
+    otp_secret_key: str | None = None
     google_client_secret: str | None = None
     google_client_id: str | None = None
     database_name: str | None = None

@@ -22,6 +22,9 @@ class MockEmailService:
     def send_password_reset_confirmation_email(self, to_email: str, name: str):
         self._record("password_reset_confirmation", to_email=to_email, name=name)
 
+    def send_otp_email(self, to_email: str, name: str, code: str):
+        self._record("otp", to_email=to_email, name=name, code=code)
+
     def send_account_deleted_email(self, to_email: str, name: str):
         self._record("account_deleted", to_email=to_email, name=name)
 
