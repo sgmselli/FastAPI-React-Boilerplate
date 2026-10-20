@@ -2,13 +2,17 @@ import { render } from '@testing-library/react'
 import type { RenderOptions } from '@testing-library/react'
 import type { ReactElement, ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
+import type { InitialEntry } from 'react-router-dom'
 
 import { AuthProvider } from '../contexts/auth'
 import { ToastProvider } from '../contexts/toast'
 
 interface Options extends Omit<RenderOptions, 'wrapper'> {
-  /** Initial history entries. Use to render a component at a given route. */
-  route?: string
+  /**
+   * The starting history entry. A path, or `{ pathname, state }` for pages
+   * that read navigation state.
+   */
+  route?: InitialEntry
   /**
    * Set false to skip AuthProvider - for tests that provide their own auth
    * context value, or that are asserting on AuthProvider itself.

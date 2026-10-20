@@ -121,7 +121,7 @@ Shared helpers:
 
 ```bash
 # terminal 1 - leave running
-docker compose -f compose/docker-compose.yml up --build
+APP_ENV=TEST docker compose -f compose/docker-compose.yml up --build
 
 # terminal 2
 cd frontend
@@ -140,4 +140,6 @@ npm run test:e2e -- --grep "sign in"  # filter by test name
 npx playwright show-report          # HTML report from the last run
 ```
 
-> Because the compose stack runs `APP_ENV=DEVELOPMENT`, local E2E runs create real users in `boilerplatedb`. Harmless and ephemeral in CI, but it accumulates on your machine over time.
+**The stack must run with `APP_ENV=TEST`, as CI does.** Registration emails a verification code, and E2E has no inbox to read it from. Under `TestSettings` the backend sets `otp_fixed_code`, so every code is `000000`, and the `verifyEmail` helper in [`helpers.ts`](../frontend/tests/e2e/helpers/helpers.ts) enters that. Under `APP_ENV=DEVELOPMENT` codes are random, and every spec that registers a user will fail at the verify step. `TestSettings` also uses an in-memory Celery broker, so no emails are actually sent during a run.
+
+Running under `APP_ENV=TEST` also means E2E users land in `boilerplatetestdb` rather than your dev database. The backend container migrates it on startup. Restart the stack without `APP_ENV=TEST` to get your dev environment back.

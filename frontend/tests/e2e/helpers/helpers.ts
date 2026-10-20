@@ -3,6 +3,12 @@ import { expect, type Page } from '@playwright/test';
 export const TEST_PASSWORD = 'Str0ng!Pass';
 
 /**
+ * Under APP_ENV=TEST the backend issues this as every verification code
+ * (otp_fixed_code in TestSettings), since e2e has no inbox to read it from.
+ */
+export const TEST_OTP_CODE = '000000';
+
+/**
  * Unique per call so specs stay idempotent against a database that persists
  * between runs - no seed fixtures to maintain, and no cleanup step.
  */
@@ -22,6 +28,17 @@ export async function registerUser(
   await page.getByRole('checkbox', { name: /Agree to policies checkbox/i }).check();
 
   await page.getByRole('button', { name: /Create account button/i }).click();
+}
+
+/**
+ * Registering lands on the verify email page - enter the code to activate
+ * the account and sign in.
+ */
+export async function verifyEmail(page: Page, code = TEST_OTP_CODE) {
+  await page.waitForURL('**/verify-email');
+
+  await page.getByRole('textbox', { name: /Verification code input/i }).fill(code);
+  await page.getByRole('button', { name: /Verify email button/i }).click();
 }
 
 /**

@@ -33,6 +33,10 @@ async def login(
         Logger.log(LogLevel.ERROR, f"A user entered an incorrect password for email '{email}'")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password.")
 
+    if not user.is_email_verified:
+        Logger.log(LogLevel.INFO, f"User ID '{user.id}' tried to log in before verifying their email")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Please verify your email.")
+
     access_token = create_access_token({
         "sub": str(user.id)
     })

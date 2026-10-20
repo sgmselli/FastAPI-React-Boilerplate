@@ -36,6 +36,7 @@
           REDIS_DB={{ redis_db }}
           BREVO_API_KEY={{ brevo_api_key }}
           FROM_EMAIL={{ from_email }}
+          OTP_SECRET_KEY={{ otp_secret_key }}
 
     - name: Create env file for database environment variables
       copy:

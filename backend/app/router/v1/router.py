@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from app.router.v1 import user, user_profile
-from app.router.v1.auth import  password_auth, google_auth, password_reset
+from app.router.v1.auth import  password_auth, google_auth, password_reset, otp
 
 router = APIRouter()
 
@@ -11,3 +11,4 @@ router.include_router(user_profile.router, prefix="/profile", tags=["profile"])
 router.include_router(password_auth.router, prefix="/auth", tags=["auth"])
 router.include_router(google_auth.router, prefix="/auth/google", tags=["google_auth"])
 router.include_router(password_reset.router, prefix="/auth/password-reset", tags=["password_reset"])
+router.include_router(otp.router, prefix="/auth/otp", tags=["otp"])

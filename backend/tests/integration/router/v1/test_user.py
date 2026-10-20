@@ -29,6 +29,19 @@ class TestRegister:
         assert body["profile"] == {"name": None, "is_profile_completed": False}
         assert "password" not in body
 
+    async def test_does_not_sign_the_user_in(self, client: AsyncClient):
+        response = await client.post(
+            "/api/v1/user/register",
+            json={
+                "email": "notsignedin@example.com",
+                "password": "Str0ng!Pass",
+                "confirm_password": "Str0ng!Pass",
+            },
+        )
+
+        assert response.cookies.get("access_token") is None
+        assert response.cookies.get("refresh_token") is None
+
     async def test_persists_user(self, client: AsyncClient, db_session: AsyncSession):
         await client.post(
             "/api/v1/user/register",
@@ -42,21 +55,39 @@ class TestRegister:
         user = await UserService(db_session).get_user_by_email("persisted@example.com")
         assert user.profile is not None
         assert user.profile.name is None
+        assert user.email_verified_at is None
 
-    async def test_welcome_email_is_addressed_to_the_email(self, client: AsyncClient, mocker):
+    async def test_queues_a_code_addressed_to_the_email(self, client: AsyncClient, mocker):
         # A new account has no profile name yet, so the email stands in for it.
-        queued_welcome_email = mocker.patch("app.router.v1.user.task_send_welcome_email")
+        queued_otp_email = mocker.patch("app.router.v1.user.task_send_otp_email")
 
         await client.post(
             "/api/v1/user/register",
             json={
-                "email": "welcome@example.com",
+                "email": "code@example.com",
                 "password": "Str0ng!Pass",
                 "confirm_password": "Str0ng!Pass",
             },
         )
 
-        queued_welcome_email.delay.assert_called_once_with("welcome@example.com", "welcome@example.com")
+        queued_otp_email.delay.assert_called_once()
+        to_email, name, code = queued_otp_email.delay.call_args.args
+        assert (to_email, name) == ("code@example.com", "code@example.com")
+        assert len(code) == 6 and code.isdigit()
+
+    async def test_welcome_email_waits_for_verification(self, client: AsyncClient, mocker):
+        queued_welcome_email = mocker.patch("app.router.v1.auth.otp.task_send_welcome_email")
+
+        await client.post(
+            "/api/v1/user/register",
+            json={
+                "email": "notyet@example.com",
+                "password": "Str0ng!Pass",
+                "confirm_password": "Str0ng!Pass",
+            },
+        )
+
+        queued_welcome_email.delay.assert_not_called()
 
     async def test_duplicate_email_returns_409(self, client: AsyncClient, make_user):
         await make_user(email="dupe@example.com")

@@ -24,6 +24,8 @@ REDIS_DB=0
 
 Fill in the remaining keys (JWT secrets, Google OAuth, bucket, Brevo) with whatever values you're using — none of them need to be real to boot the app locally, but auth/email/upload flows won't work without them.
 
+`OTP_SECRET_KEY` is the one to set even for a quick local run: registration hashes its verification code with it, so without it every sign up fails with a 500. Any random string works locally.
+
 > **`.env` is baked into the image, not mounted.** The Dockerfile does `COPY . .` at build time, so editing `.env` after the image is built has no effect until you rebuild.
 
 ## 2. Start everything

@@ -34,6 +34,7 @@ class TestGoogleCallback:
         user = await UserService(db_session).get_user_by_email("brandnew@example.com")
         assert user.google_id == "google-abc"
         assert user.password is None
+        assert user.email_verified_at is not None
 
     async def test_links_google_id_to_existing_email_user(
         self, client: AsyncClient, db_session: AsyncSession, make_user, mocker
@@ -49,6 +50,27 @@ class TestGoogleCallback:
         assert response.status_code == 302
         user = await UserService(db_session).get_user_by_email("linkme@example.com")
         assert user.google_id == "google-link"
+        assert user.password is not None
+
+    async def test_linking_an_unverified_user_verifies_them_and_drops_the_password(
+        self, client: AsyncClient, db_session: AsyncSession, make_user, mocker
+    ):
+        # Someone could register the owner's email with a password of their
+        # own and never verify it. Google proves who owns the email, so that
+        # password must not carry over into the now-verified account.
+        await make_user(email="squatted@example.com", email_verified=False)
+        mock_authorize(
+            mocker,
+            return_value=fake_token(google_id="google-owner", email="squatted@example.com"),
+        )
+
+        response = await client.get("/api/v1/auth/google/callback", follow_redirects=False)
+
+        assert response.status_code == 302
+        user = await UserService(db_session).get_user_by_email("squatted@example.com")
+        assert user.google_id == "google-owner"
+        assert user.email_verified_at is not None
+        assert user.password is None
 
     async def test_logs_in_existing_google_user(
         self, client: AsyncClient, make_user, mocker

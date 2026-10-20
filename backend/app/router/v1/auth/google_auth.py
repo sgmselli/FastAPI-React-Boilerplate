@@ -38,6 +38,10 @@ async def auth_google_callback(
         except UserGoogleIdDoesNotExist:
             try:
                 user = await user_service.get_user_by_email(email)
+                # Whoever set this password never proved they own the email, so
+                # it can't survive Google vouching for the real owner.
+                if not user.is_email_verified:
+                    await user_service.remove_password(user)
                 await user_service.link_google_id(user, google_id)
             except UserEmailDoesNotExist:
                 Logger.log(LogLevel.INFO, "Google ID does not exist for user. Creating user.")
@@ -46,7 +50,10 @@ async def auth_google_callback(
                     google_id=google_id
                 )
                 user = await user_service.create_user_without_password(user_create)
-             
+
+        if not user.is_email_verified:
+            await user_service.mark_email_verified(user)
+
         access_token = create_access_token({"sub": str(user.id)})
         refresh_token = create_refresh_token({"sub": str(user.id)})
 

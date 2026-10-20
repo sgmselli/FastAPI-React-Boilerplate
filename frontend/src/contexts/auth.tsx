@@ -1,12 +1,14 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 
 import { getCurrentUser, loginUser, logoutUser } from "../api/user";
+import { verifyOtp } from "../api/otp";
 import type { UserLoginRequest, UserResponse } from "../types/user";
 
 interface AuthContextType {
   user: UserResponse | null;
   loadingUser: boolean;
   login: (requestData: UserLoginRequest) => Promise<UserResponse>;
+  verifyEmail: (email: string, code: string) => Promise<UserResponse>;
   logout: () => Promise<void>;
   setUser: (user: UserResponse | null) => void;
   isAuthenticated: () => boolean;
@@ -42,6 +44,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return userData
     }, []);
 
+    const verifyEmail = useCallback(async (email: string, code: string): Promise<UserResponse> => {
+        const userData = await verifyOtp({ email, code });
+        setUser(userData);
+        return userData;
+    }, []);
+
     const logout = useCallback(async () => {
         await logoutUser();
         setUser(null);
@@ -50,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isAuthenticated = () => !!user && !loadingUser;
 
     return (
-        <AuthContext.Provider value={{ user, loadingUser, login, logout, setUser, isAuthenticated }}>
+        <AuthContext.Provider value={{ user, loadingUser, login, verifyEmail, logout, setUser, isAuthenticated }}>
             {children}
         </AuthContext.Provider>
     );

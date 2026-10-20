@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.exceptions.user import UserAlreadyExists
 from app.schema.user import UserResponse, UserCreate
+from app.services.one_time_password_services import OneTimePasswordService, get_one_time_password_service
 from app.services.user_services import UserService, get_user_service
 from app.models.user import User
 from app.auth.current_user import get_current_user_or_raise_http_error
 from app.auth.jwt import delete_tokens
-from app.celery.tasks.email_tasks import task_send_welcome_email, task_send_account_deleted_email
+from app.celery.tasks.email_tasks import task_send_otp_email, task_send_account_deleted_email
 from app.utils.logging import Logger, LogLevel
 
 router = APIRouter()
@@ -33,15 +34,21 @@ async def delete_current_user(
         Logger.log(LogLevel.ERROR, f"Failed to queue account deleted email for user ID '{user_id}': {e}")
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register_user(user_create: UserCreate, user_service: UserService = Depends(get_user_service)):
+async def register_user(
+    user_create: UserCreate,
+    user_service: UserService = Depends(get_user_service),
+    otp_service: OneTimePasswordService = Depends(get_one_time_password_service)
+):
     try:
         user = await user_service.create_user_with_password(user_create)
     except UserAlreadyExists as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
+    raw_code = await otp_service.create(user.id)
+
     try:
-        task_send_welcome_email.delay(user.email, user.display_name)
+        task_send_otp_email.delay(user.email, user.display_name, raw_code)
     except Exception as e:
-        Logger.log(LogLevel.ERROR, f"Failed to queue welcome email for '{user.email}': {e}")
+        Logger.log(LogLevel.ERROR, f"Failed to queue one time password email for user ID '{user.id}': {e}")
 
     return user

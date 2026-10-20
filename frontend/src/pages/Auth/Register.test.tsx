@@ -100,15 +100,14 @@ describe('Register', () => {
     expect(terms).toHaveAttribute('target', '_blank')
   })
 
-  it('registers, logs the user in, then navigates', async () => {
-    const calls: string[] = []
+  it('registers, then sends the user to verify their email', async () => {
+    let loggedIn = false
     server.use(
-      http.post(`${API}/user/register`, () => {
-        calls.push('register')
-        return HttpResponse.json(withProfileName(null), { status: 201 })
-      }),
+      http.post(`${API}/user/register`, () =>
+        HttpResponse.json(withProfileName(null), { status: 201 }),
+      ),
       http.post(`${API}/auth/login`, () => {
-        calls.push('login')
+        loggedIn = true
         return HttpResponse.json(withProfileName(null))
       }),
     )
@@ -118,10 +117,14 @@ describe('Register', () => {
 
     await userEvent.click(screen.getByLabelText('Create account button'))
 
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/auth/callback'))
-    // Registration doesn't set cookies, so the page logs in immediately after
-    // to establish a session - order matters.
-    expect(calls).toEqual(['register', 'login'])
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith('/verify-email', {
+        state: { email: 'test@example.com' },
+      }),
+    )
+    // The account can't sign in until the code is entered, so there's no
+    // login attempt here any more.
+    expect(loggedIn).toBe(false)
   })
 
   it('sends confirm_password in the snake_case the API expects', async () => {

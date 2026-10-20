@@ -13,7 +13,7 @@ import { useAuth } from './auth'
  * actually sees, rather than reaching into the provider's internals.
  */
 function AuthConsumer() {
-  const { user, loadingUser, login, logout, isAuthenticated } = useAuth()
+  const { user, loadingUser, login, verifyEmail, logout, isAuthenticated } = useAuth()
 
   return (
     <div>
@@ -26,6 +26,9 @@ function AuthConsumer() {
         }
       >
         login
+      </button>
+      <button onClick={() => verifyEmail('test@example.com', '123456').catch(() => {})}>
+        verify
       </button>
       <button onClick={() => logout()}>logout</button>
     </div>
@@ -105,6 +108,47 @@ describe('AuthProvider', () => {
       await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('false'))
 
       await userEvent.click(screen.getByRole('button', { name: 'login' }))
+
+      await waitFor(() => expect(screen.getByTestId('user')).toHaveTextContent('none'))
+    })
+  })
+
+  describe('verifyEmail', () => {
+    it('sets the user on success, since verifying signs them in', async () => {
+      let body: Record<string, unknown> | undefined
+      server.use(
+        http.get(`${API}/user/current`, () => new HttpResponse(null, { status: 401 })),
+        http.post(`${API}/auth/refresh`, () => new HttpResponse(null, { status: 401 })),
+        http.post(`${API}/auth/otp/verify`, async ({ request }) => {
+          body = (await request.json()) as Record<string, unknown>
+          return HttpResponse.json(testUser)
+        }),
+      )
+
+      renderWithProviders(<AuthConsumer />)
+      await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('false'))
+      expect(screen.getByTestId('user')).toHaveTextContent('none')
+
+      await userEvent.click(screen.getByRole('button', { name: 'verify' }))
+
+      await waitFor(() => expect(screen.getByTestId('user')).toHaveTextContent(testUser.email))
+      expect(body).toEqual({ email: 'test@example.com', code: '123456' })
+      expect(screen.getByTestId('authenticated')).toHaveTextContent('true')
+    })
+
+    it('leaves the user unset when the code is rejected', async () => {
+      server.use(
+        http.get(`${API}/user/current`, () => new HttpResponse(null, { status: 401 })),
+        http.post(`${API}/auth/refresh`, () => new HttpResponse(null, { status: 401 })),
+        http.post(`${API}/auth/otp/verify`, () =>
+          HttpResponse.json({ detail: 'This code is invalid or has expired.' }, { status: 400 }),
+        ),
+      )
+
+      renderWithProviders(<AuthConsumer />)
+      await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('false'))
+
+      await userEvent.click(screen.getByRole('button', { name: 'verify' }))
 
       await waitFor(() => expect(screen.getByTestId('user')).toHaveTextContent('none'))
     })

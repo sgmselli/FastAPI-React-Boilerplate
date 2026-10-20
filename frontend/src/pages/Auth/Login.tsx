@@ -1,4 +1,5 @@
 import { useState } from "react";
+import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -8,6 +9,7 @@ import { useAuth } from "../../contexts/auth";
 import { Loading } from "../../components/Loading";
 import usePageTitle from "../../hooks/usePageTitle";
 import { parseApiError } from "../../utils/apiErrors";
+import { resendOtp } from "../../api/otp";
 
 export const Login: React.FC = () => {
     // -----------------------------
@@ -46,6 +48,19 @@ export const Login: React.FC = () => {
             await login(buildLoginData());
             navigate("/auth/callback");
         } catch (e: unknown) {
+            // Right password, but the account was never verified. Their first code
+            // has likely expired, so send a fresh one (the backend ignores this inside
+            // its cooldown) and take them to enter it.
+            if (axios.isAxiosError(e) && e.response?.status === 403) {
+                try {
+                    await resendOtp({ email });
+                } catch {
+                    // The verify page can still send one
+                }
+                navigate("/verify-email", { state: { email } });
+                return;
+            }
+
             // No per-field messages on this form - validation errors get the fallback too
             const { message } = parseApiError(e, "Failed to sign in.");
             setError(message ?? "Failed to sign in.");
