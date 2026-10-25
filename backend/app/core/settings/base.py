@@ -33,6 +33,7 @@ class BaseAppSettings(BaseSettings):
     profile_picture_max_pixels: int = 40_000_000
     profile_picture_size: int = 512
     profile_picture_url_expire_seconds: int = 3600
+    log_level: str = "INFO"
 
     debug: bool | None = None
     frontend_url: str | None = None
@@ -58,6 +59,9 @@ class BaseAppSettings(BaseSettings):
     redis_password: str | None = None
     brevo_api_key: str | None = None
     from_email: str | None = None
+
+    def is_production(self) -> bool:
+        return self.app_env == AppEnvTypes.PRODUCTION
 
     @property
     def async_driver_database_url(self) -> str:

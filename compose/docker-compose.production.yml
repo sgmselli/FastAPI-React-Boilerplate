@@ -1,3 +1,10 @@
+# Docker keeps container logs forever by default - cap each container at 5 x 10MB
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   reverse-proxy:
     container_name: reverse-proxy
@@ -13,6 +20,7 @@ services:
     networks:
       - backend
     restart: unless-stopped
+    logging: *default-logging
 
   certbot:
     image: certbot/certbot
@@ -21,6 +29,7 @@ services:
       - ./certbot/conf/:/etc/letsencrypt/:rw
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
     restart: unless-stopped
+    logging: *default-logging
 
   backend:
     container_name: backend
@@ -35,6 +44,7 @@ services:
     networks:
       - backend
     restart: unless-stopped
+    logging: *default-logging
 
   db:
     container_name: db
@@ -54,6 +64,7 @@ services:
       retries: 5
       start_period: 10s
     restart: unless-stopped
+    logging: *default-logging
 
   worker:
     container_name: worker
@@ -67,6 +78,7 @@ services:
     networks:
       - backend
     restart: unless-stopped
+    logging: *default-logging
 
   redis:
     image: redis:7-alpine
@@ -80,6 +92,7 @@ services:
       timeout: 3s
       retries: 10
     restart: unless-stopped
+    logging: *default-logging
 
 volumes:
   db_data:

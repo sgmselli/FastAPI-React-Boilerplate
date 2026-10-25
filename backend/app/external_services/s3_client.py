@@ -1,3 +1,4 @@
+import logging
 from functools import cached_property, lru_cache
 from io import BytesIO
 from typing import BinaryIO
@@ -7,7 +8,8 @@ from fastapi.concurrency import run_in_threadpool
 
 from app.core.config import settings
 from app.exceptions.s3 import S3ClientException
-from app.utils.logging import Logger, LogLevel
+
+logger = logging.getLogger(__name__)
 
 class S3Client:
     def __init__(self):
@@ -27,7 +29,7 @@ class S3Client:
         )
 
     def generate_presigned_url(self, object_name: str, expires_in: int = 3600) -> str:
-        Logger.log(LogLevel.INFO, f"Generating presigned URL for {object_name}")
+        logger.info("Generating presigned URL for %s", object_name)
 
         try:
             url = self.s3.generate_presigned_url(
@@ -36,12 +38,12 @@ class S3Client:
                 ExpiresIn=expires_in,
             )
             return url
-        except Exception as e:
-            Logger.log(LogLevel.ERROR, f"Error generating presigned URL for {object_name}: {e}")
+        except Exception:
+            logger.exception("Error generating presigned URL for %s", object_name)
             raise S3ClientException()
 
     async def upload_fileobj(self, object_name: str, file: bytes | BinaryIO, content_type: str) -> None:
-        Logger.log(LogLevel.INFO, f"Uploading {object_name} ({content_type})")
+        logger.info("Uploading %s (%s)", object_name, content_type)
 
         file_obj = BytesIO(file) if isinstance(file, bytes) else file
 
@@ -57,23 +59,23 @@ class S3Client:
                     "CacheControl": "public, max-age=31536000, immutable",
                 }
             )
-        except Exception as e:
-            Logger.log(LogLevel.ERROR, f"Error uploading object {object_name}: {e}")
+        except Exception:
+            logger.exception("Error uploading object %s", object_name)
             raise S3ClientException()
 
     async def delete_object(self, object_name: str) -> None:
-        Logger.log(LogLevel.INFO, f"Deleting {object_name}")
+        logger.info("Deleting %s", object_name)
         try:
             await run_in_threadpool(self.s3.delete_object, Bucket=self.bucket_name, Key=object_name)
-        except Exception as e:
-            Logger.log(LogLevel.ERROR, f"Error deleting object {object_name}: {e}")
+        except Exception:
+            logger.exception("Error deleting object %s", object_name)
             raise S3ClientException()
 
     async def delete_object_quietly(self, object_name: str) -> None:
         try:
             await self.delete_object(object_name)
         except S3ClientException:
-            Logger.log(LogLevel.ERROR, f"Failed to delete object {object_name}, it is now orphaned in the bucket")
+            logger.error("Failed to delete object %s, it is now orphaned in the bucket", object_name)
 @lru_cache
 def get_s3_client() -> S3Client:
     return S3Client()

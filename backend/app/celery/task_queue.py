@@ -1,6 +1,8 @@
 from celery import Celery
+from celery.signals import setup_logging
 
 from app.core.config import settings
+from app.utils.logging import configure_logging
 
 celery_task_queue = Celery(
     "worker",
@@ -10,3 +12,8 @@ celery_task_queue = Celery(
         "app.celery.tasks.email_tasks"
     ]
 )
+
+# Connecting to this signal stops Celery replacing the root logger with its own
+@setup_logging.connect
+def configure_worker_logging(**kwargs):
+    configure_logging()

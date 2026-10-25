@@ -4,10 +4,12 @@ import os
 # settings class. Without it the suite loads DevelopmentSettings.
 os.environ.setdefault("APP_ENV", "TEST")
 
+import logging
 import pytest
 
 from app.services import email_services
-from app.utils.logging import Logger, LogLevel
+
+logger = logging.getLogger(__name__)
 
 class MockEmailService:
     def __init__(self):
@@ -30,7 +32,7 @@ class MockEmailService:
 
     def _record(self, email: str, **fields):
         self.sent.append({"email": email, **fields})
-        Logger.log(LogLevel.INFO, f"Mock email service: would have sent '{email}' to {fields['to_email']}")
+        logger.info("Mock email service: would have sent %s", email)
 
 @pytest.fixture
 def mock_email_service() -> MockEmailService:

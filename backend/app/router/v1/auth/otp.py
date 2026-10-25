@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from uuid import uuid4
 
@@ -9,7 +10,8 @@ from app.services.one_time_password_services import OneTimePasswordService, get_
 from app.services.user_services import UserService, get_user_service
 from app.auth.jwt import create_access_token, create_refresh_token, store_tokens
 from app.celery.tasks.email_tasks import task_send_otp_email, task_send_welcome_email
-from app.utils.logging import Logger, LogLevel
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -26,7 +28,7 @@ async def verify_otp(
     try:
         user = await user_service.get_user_by_email(verify_otp_request.email)
     except UserEmailDoesNotExist:
-        Logger.log(LogLevel.ERROR, "A one time password was submitted for an email which does not exist")
+        logger.info("A one time password was submitted for an email which does not exist")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=INVALID_CODE_MESSAGE)
 
     if user.is_email_verified:
@@ -35,7 +37,7 @@ async def verify_otp(
     try:
         await otp_service.verify(user.id, verify_otp_request.code)
     except (OneTimePasswordDoesNotExist, OneTimePasswordInvalid, OneTimePasswordIncorrect) as e:
-        Logger.log(LogLevel.ERROR, f"One time password rejected for user ID '{user.id}': {e}")
+        logger.info("One time password rejected for user ID %s: %s", user.id, e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=INVALID_CODE_MESSAGE)
 
     await user_service.mark_email_verified(user)
@@ -51,8 +53,8 @@ async def verify_otp(
 
     try:
         task_send_welcome_email.delay(user.email, user.display_name)
-    except Exception as e:
-        Logger.log(LogLevel.ERROR, f"Failed to queue welcome email for '{user.email}': {e}")
+    except Exception:
+        logger.exception("Failed to queue welcome email for user ID %s", user.id)
 
     return UserResponse.model_validate(user)
 
@@ -65,7 +67,7 @@ async def resend_otp(
     try:
         user = await user_service.get_user_by_email(resend_otp_request.email)
     except UserEmailDoesNotExist:
-        Logger.log(LogLevel.INFO, "A one time password resend was requested for an email which does not exist")
+        logger.info("A one time password resend was requested for an email which does not exist")
         return OtpMessageResponse(message=GENERIC_RESEND_MESSAGE)
 
     if user.is_email_verified or not await otp_service.can_resend(user.id):
@@ -75,7 +77,7 @@ async def resend_otp(
 
     try:
         task_send_otp_email.delay(user.email, user.display_name, raw_code)
-    except Exception as e:
-        Logger.log(LogLevel.ERROR, f"Failed to queue one time password email for user ID '{user.id}': {e}")
+    except Exception:
+        logger.exception("Failed to queue one time password email for user ID %s", user.id)
 
     return OtpMessageResponse(message=GENERIC_RESEND_MESSAGE)

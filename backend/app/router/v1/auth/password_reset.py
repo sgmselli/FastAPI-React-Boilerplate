@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.exceptions.password_reset_token import PasswordResetTokenDoesNotExist, PasswordResetTokenInvalid
@@ -12,7 +13,8 @@ from app.schema.password_reset_token import (
 from app.services.password_reset_token_services import PasswordResetTokenService, get_password_reset_token_service
 from app.services.user_services import UserService, get_user_service
 from app.celery.tasks.email_tasks import task_send_password_reset_email, task_send_password_reset_confirmation_email
-from app.utils.logging import Logger, LogLevel
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -30,17 +32,16 @@ async def request_password_reset(
     try:
         user = await user_service.get_user_by_email(email)
     except UserEmailDoesNotExist:
-        Logger.log(LogLevel.INFO, "A password reset was requested for an email which does not exist")
+        logger.info("A password reset was requested for an email which does not exist")
         return PasswordResetMessageResponse(message=GENERIC_REQUEST_MESSAGE)
 
     raw_token = await password_reset_token_service.create(user.id)
     reset_url = password_reset_token_service.get_reset_url(raw_token)
-    Logger.log(LogLevel.DEBUG, reset_url)
 
     try:
         task_send_password_reset_email.delay(user.email, user.display_name, reset_url)
-    except Exception as e:
-        Logger.log(LogLevel.ERROR, f"Failed to queue password reset email for user ID '{user.id}': {e}")
+    except Exception:
+        logger.exception("Failed to queue password reset email for user ID %s", user.id)
 
     return PasswordResetMessageResponse(message=GENERIC_REQUEST_MESSAGE)
 
@@ -65,7 +66,7 @@ async def confirm_password_reset(
     try:
         token = await password_reset_token_service.get_by_raw_token(reset_password_request.token)
     except (PasswordResetTokenDoesNotExist, PasswordResetTokenInvalid):
-        Logger.log(LogLevel.ERROR, "A password reset was attempted with an invalid or expired token")
+        logger.info("A password reset was attempted with an invalid or expired token")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=INVALID_TOKEN_MESSAGE)
 
     user = await user_service.get_user_by_id(token.user_id)
@@ -75,7 +76,7 @@ async def confirm_password_reset(
 
     try:
         task_send_password_reset_confirmation_email.delay(user.email, user.display_name)
-    except Exception as e:
-        Logger.log(LogLevel.ERROR, f"Failed to queue password reset confirmation email for user ID '{user.id}': {e}")
+    except Exception:
+        logger.exception("Failed to queue password reset confirmation email for user ID %s", user.id)
 
     return PasswordResetMessageResponse(message="Your password has been reset.")
