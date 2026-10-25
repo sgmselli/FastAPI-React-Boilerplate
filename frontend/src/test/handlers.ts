@@ -12,11 +12,18 @@ export function withProfileName(name: string | null): UserResponse {
     id: 1,
     email: 'test@example.com',
     display_name: name || 'test@example.com',
-    profile: { name, is_profile_completed: name !== null },
+    profile: { name, is_profile_completed: name !== null, profile_picture_url: null },
   }
 }
 
 export const testUser: UserResponse = withProfileName('Test User')
+
+export const TEST_PICTURE_URL = 'https://bucket.test/profile-pictures/1/picture.webp?signed'
+
+/** The test user with a profile picture - `null` for the default image. */
+export function withProfilePicture(url: string | null): UserResponse {
+  return { ...testUser, profile: { ...testUser.profile, profile_picture_url: url } }
+}
 
 /**
  * Default happy-path handlers. Individual tests override these per-case with
@@ -37,7 +44,11 @@ export const handlers = [
     return HttpResponse.json(withProfileName(body.name.trim()))
   }),
 
-  http.delete(`${API}/user/current`, () => new HttpResponse(null, { status: 204 })),
+  http.put(`${API}/profile/current/picture`, () => HttpResponse.json(withProfilePicture(TEST_PICTURE_URL))),
+
+  http.delete(`${API}/profile/current/picture`, () => HttpResponse.json(withProfilePicture(null))),
+
+  http.delete(`${API}/user/current`,() => new HttpResponse(null, { status: 204 })),
 
   http.post(`${API}/user/register`, () => HttpResponse.json(testUser, { status: 201 })),
 

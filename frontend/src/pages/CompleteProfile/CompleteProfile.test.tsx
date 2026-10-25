@@ -6,7 +6,7 @@ import { Route, Routes } from 'react-router-dom'
 import AuthorizedRoute from '../../components/ProtectedRoutes/AuthorizedRoute'
 import { useAuth } from '../../contexts/auth'
 import { API_URL as API } from '../../test/constants'
-import { withProfileName } from '../../test/handlers'
+import { TEST_PICTURE_URL, withProfileName } from '../../test/handlers'
 import { server } from '../../test/setup'
 import { renderWithProviders, screen, waitFor } from '../../test/renderWithProviders'
 import { CompleteProfile } from './CompleteProfile'
@@ -56,6 +56,28 @@ beforeEach(() => {
 })
 
 describe('CompleteProfile', () => {
+  it('uploads a profile picture without leaving the page or saving the name', async () => {
+    let nameSaved = false
+    server.use(
+      http.patch(UPDATE_URL, () => {
+        nameSaved = true
+        return HttpResponse.json(withProfileName('New Name'))
+      }),
+    )
+
+    await renderCompleteProfile()
+    await userEvent.upload(
+      screen.getByLabelText('Profile picture input'),
+      new File(['image-bytes'], 'me.png', { type: 'image/png' }),
+    )
+
+    await waitFor(() =>
+      expect(screen.getByRole('img', { name: 'Profile picture' })).toHaveAttribute('src', TEST_PICTURE_URL),
+    )
+    expect(mockNavigate).not.toHaveBeenCalled()
+    expect(nameSaved).toBe(false)
+  })
+
   it('starts with an empty name for a new account', async () => {
     await renderCompleteProfile()
 

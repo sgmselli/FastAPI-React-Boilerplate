@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { updateCurrentUserProfile } from "../../api/userProfile";
 import { useAuth } from "../../contexts/auth";
 import { Loading } from "../../components/Loading";
+import { ProfilePictureInput } from "../../components/ProfilePictureInput/ProfilePictureInput";
 import usePageTitle from "../../hooks/usePageTitle";
 import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 
@@ -71,6 +72,8 @@ export const CompleteProfile: React.FC = () => {
                             <h1 className="text-4xl font-semibold primary-color">Complete your profile</h1>
                             <p className="text-lg mt-2 text-gray-500">Tell us a little about yourself.</p>
                         </div>
+
+                        <ProfilePictureInput />
 
                         {
                             error && (

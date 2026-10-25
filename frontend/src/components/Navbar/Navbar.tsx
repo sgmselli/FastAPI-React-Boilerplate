@@ -31,7 +31,7 @@ export const Navbar: React.FC = () => {
                     {
                         !loadingUser && (
                             isAuthenticated() && user ? (
-                                <UserMenu name={user.display_name} />
+                                <UserMenu name={user.display_name} pictureUrl={user.profile.profile_picture_url} />
                             ) : (
                                 <>
                                     <div className="hidden sm:flex items-center gap-6 text-blue-700 text-xs sm:text-md">
