@@ -6,8 +6,14 @@ import { Avatar } from "../Avatar/Avatar";
 import { Loading } from "../Loading";
 import { parseApiError } from "../../utils/apiErrors";
 
-const ALLOWED_PICTURE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ALLOWED_PICTURE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/avif"];
+// Some browsers report HEIC files with an empty type, so the extension is checked too
+const ALLOWED_PICTURE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".avif"];
 export const MAX_PICTURE_BYTES = 5 * 1024 * 1024;
+
+const isAllowedPicture = (file: File): boolean =>
+    ALLOWED_PICTURE_TYPES.includes(file.type) ||
+    ALLOWED_PICTURE_EXTENSIONS.some((extension) => file.name.toLowerCase().endsWith(extension));
 
 interface ProfilePictureInputProps {
     onUploaded?: () => void;
@@ -36,8 +42,8 @@ export const ProfilePictureInput: React.FC<ProfilePictureInputProps> = ({ onUplo
 
         setError(null);
 
-        if (!ALLOWED_PICTURE_TYPES.includes(file.type)) {
-            setError("Image must be a JPEG, PNG or WebP.");
+        if (!isAllowedPicture(file)) {
+            setError("Image must be a JPEG, PNG, WebP, HEIC or AVIF.");
             return;
         }
         if (file.size > MAX_PICTURE_BYTES) {
@@ -116,13 +122,13 @@ export const ProfilePictureInput: React.FC<ProfilePictureInputProps> = ({ onUplo
                             )
                         }
                     </div>
-                    <p className="text-[13px] text-gray-500">JPEG, PNG or WebP, up to 5MB.</p>
+                    <p className="text-[13px] text-gray-500">JPEG, PNG, WebP, HEIC or AVIF, up to 5MB.</p>
                 </div>
 
                 <input
                     ref={fileInputRef}
                     type="file"
-                    accept={ALLOWED_PICTURE_TYPES.join(",")}
+                    accept={[...ALLOWED_PICTURE_TYPES, ...ALLOWED_PICTURE_EXTENSIONS].join(",")}
                     onChange={handleFileSelected}
                     className="hidden"
                     aria-label="Profile picture input"

@@ -1,10 +1,14 @@
 from io import BytesIO
 from PIL import Image, ImageOps
+from pillow_heif import register_heif_opener
 
 from app.core.config import settings
 from app.exceptions.image import InvalidImage
 
-ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
+# iPhones save HEIC by default
+register_heif_opener()
+
+ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP", "HEIF", "AVIF"}
 PROFILE_PICTURE_CONTENT_TYPE = "image/webp"
 
 def process_profile_picture(data: bytes) -> bytes:
@@ -23,7 +27,7 @@ def process_profile_picture(data: bytes) -> bytes:
         raise InvalidImage()
 
     if image.format not in ALLOWED_IMAGE_FORMATS:
-        raise InvalidImage("Image must be a JPEG, PNG or WebP.")
+        raise InvalidImage("Image must be a JPEG, PNG, WebP, HEIC or AVIF.")
 
     # Image.open only reads the header, so this is checked before the pixels are
     # decoded - a small file can still declare enormous dimensions

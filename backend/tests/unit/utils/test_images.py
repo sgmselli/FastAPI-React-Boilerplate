@@ -18,7 +18,7 @@ def open_result(data: bytes) -> Image.Image:
 
 
 class TestProcessProfilePicture:
-    @pytest.mark.parametrize("format", ["JPEG", "PNG", "WEBP"])
+    @pytest.mark.parametrize("format", ["JPEG", "PNG", "WEBP", "HEIF", "AVIF"])
     def test_allowed_formats_become_square_webp(self, format):
         result = open_result(process_profile_picture(make_image(format, (300, 200))))
 
@@ -63,6 +63,15 @@ class TestProcessProfilePicture:
 
         assert len(result.getexif()) == 0
 
+    def test_heic_metadata_is_stripped(self):
+        exif = Image.Exif()
+        exif[0x010F] = "Apple"
+        data = make_image("HEIF", exif=exif.tobytes())
+
+        result = open_result(process_profile_picture(data))
+
+        assert len(result.getexif()) == 0
+
     def test_exif_orientation_is_applied_before_stripping(self):
         exif = Image.Exif()
         exif[0x0112] = 6  # Rotated 90 degrees - a portrait photo stored as landscape
@@ -91,7 +100,7 @@ class TestProcessProfilePicture:
             process_profile_picture(make_image("PNG"))
 
     def test_disallowed_format_rejected(self):
-        with pytest.raises(InvalidImage, match="JPEG, PNG or WebP"):
+        with pytest.raises(InvalidImage, match="JPEG, PNG, WebP, HEIC or AVIF"):
             process_profile_picture(make_image("GIF"))
 
     def test_non_image_rejected(self):

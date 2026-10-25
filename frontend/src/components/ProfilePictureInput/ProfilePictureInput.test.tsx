@@ -55,7 +55,10 @@ describe('ProfilePictureInput', () => {
   it('only offers the allowed image types in the file picker', async () => {
     await renderInput()
 
-    expect(fileInput()).toHaveAttribute('accept', 'image/jpeg,image/png,image/webp')
+    expect(fileInput()).toHaveAttribute(
+      'accept',
+      'image/jpeg,image/png,image/webp,image/heic,image/heif,image/avif,.jpg,.jpeg,.png,.webp,.heic,.heif,.avif',
+    )
   })
 
   it('uploads the chosen file and updates the session user', async () => {
@@ -77,6 +80,27 @@ describe('ProfilePictureInput', () => {
     expect(onUploaded).toHaveBeenCalledOnce()
   })
 
+  it.each([
+    ['an iPhone HEIC', new File(['heic'], 'IMG_0001.HEIC', { type: 'image/heic' })],
+    ['an AVIF', new File(['avif'], 'photo.avif', { type: 'image/avif' })],
+    // Chrome and Firefox on Windows often report HEIC with no type at all
+    ['a HEIC the browser gives no type', new File(['heic'], 'IMG_0001.HEIC', { type: '' })],
+  ])('uploads %s', async (_, file) => {
+    let called = false
+    server.use(
+      http.put(PICTURE_URL, () => {
+        called = true
+        return HttpResponse.json(withProfilePicture(TEST_PICTURE_URL))
+      }),
+    )
+
+    await renderInput()
+    await userEvent.setup({ applyAccept: false }).upload(fileInput(), file)
+
+    await waitFor(() => expect(called).toBe(true))
+    expect(screen.queryByText(/Image must be/)).not.toBeInTheDocument()
+  })
+
   it('rejects a disallowed type without uploading', async () => {
     let called = false
     server.use(
@@ -90,7 +114,7 @@ describe('ProfilePictureInput', () => {
     // Bypasses the accept filter, as a user can by choosing "All files"
     await userEvent.setup({ applyAccept: false }).upload(fileInput(), new File(['gif'], 'me.gif', { type: 'image/gif' }))
 
-    expect(await screen.findByText('Image must be a JPEG, PNG or WebP.')).toBeInTheDocument()
+    expect(await screen.findByText('Image must be a JPEG, PNG, WebP, HEIC or AVIF.')).toBeInTheDocument()
     expect(called).toBe(false)
   })
 

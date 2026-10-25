@@ -122,19 +122,36 @@ Both return the updated user, with `profile.profile_picture_url` set to a fresh 
 
 | Status | When |
 |---|---|
-| `422` | Not an image, not JPEG/PNG/WebP, over 5MB, or over 40 megapixels — `detail` says which |
+| `422` | Not an image, not JPEG/PNG/WebP/HEIC/AVIF, over 5MB, or over 40 megapixels — `detail` says which |
 | `502` | The upload to the bucket failed |
 | `401` | Not signed in |
 
 ### What happens on upload
 
 1. **Validate** — the format is read from the bytes, not the client's `Content-Type`, so a renamed PDF is rejected. Dimensions are checked from the header before decoding, so a small file declaring enormous dimensions can't exhaust memory.
+   Accepted formats are JPEG, PNG, WebP, HEIC and AVIF — see [Phone photo formats](#phone-photo-formats).
 2. **Re-encode** — EXIF rotation is applied, the image is centre-cropped to a square, resized to 512×512 and saved as WebP. Re-encoding drops all metadata, including GPS location.
 3. **Upload** under a new key, `profile-pictures/{user_id}/{uuid}.webp`. Every upload gets a fresh key because objects are stored with `Cache-Control: immutable` — overwriting a key would leave caches serving the old image for a year.
 4. **Save** the key on the profile.
 5. **Delete the previous picture**, if there was one.
 
 Validation and resizing run in a threadpool, and boto3's synchronous calls are wrapped in `run_in_threadpool`, so neither blocks the event loop.
+
+### Phone photo formats
+
+| Device | Default camera format |
+|---|---|
+| iPhone (iOS 11+) | HEIC — or JPEG if *Settings → Camera → Formats* is set to *Most Compatible* |
+| Android | JPEG on almost all phones; some Samsung and Pixel models offer HEIF as an opt-in |
+
+**HEIC** is decoded by [`pillow-heif`](https://github.com/bigcat88/pillow_heif), registered as a Pillow plugin at the top of [`images.py`](../backend/app/utils/images.py). Its wheels bundle libheif, so the Docker image needs no system packages. **AVIF** is built into Pillow 12.
+
+Whatever arrives is re-encoded to WebP, so the stored object and what browsers display are the same for every input format — including browsers that can't show HEIC themselves.
+
+Two browser quirks the frontend handles:
+
+- **iOS converts on its own** when the file input's `accept` list doesn't mention HEIC, handing the server a JPEG. Because ours does list it, iPhones send the original HEIC and the server converts it instead.
+- **Desktop Chrome and Firefox on Windows often report HEIC with an empty `type`**, so [`ProfilePictureInput`](../frontend/src/components/ProfilePictureInput/ProfilePictureInput.tsx) also accepts files by extension. The backend's check on the bytes is still the one that counts.
 
 ### Orphans
 
