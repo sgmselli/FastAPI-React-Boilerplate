@@ -27,3 +27,16 @@ def make_mock_session(first_return: Base | None = None) -> MagicMock:
     session.commit = AsyncMock()
     session.refresh = AsyncMock()
     return session
+
+def make_mock_s3_client() -> MagicMock:
+    """
+    S3Client stand-in. upload_fileobj, delete_object and delete_object_quietly
+    are async on the real client, so they're AsyncMocks here; generate_presigned_url is sync and
+    returns a URL built from the key so tests can assert which key it signed.
+    """
+    s3_client = MagicMock()
+    s3_client.upload_fileobj = AsyncMock()
+    s3_client.delete_object = AsyncMock()
+    s3_client.delete_object_quietly = AsyncMock()
+    s3_client.generate_presigned_url = MagicMock(side_effect=lambda key, **_: f"https://bucket.test/{key}?signed")
+    return s3_client

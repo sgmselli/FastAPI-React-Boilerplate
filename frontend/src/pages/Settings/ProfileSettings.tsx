@@ -4,6 +4,7 @@ import { updateCurrentUserProfile } from "../../api/userProfile";
 import { useAuth } from "../../contexts/auth";
 import { useToast } from "../../contexts/toast";
 import { Loading } from "../../components/Loading";
+import { ProfilePictureInput } from "../../components/ProfilePictureInput/ProfilePictureInput";
 import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 
 type ProfileField = "name";
@@ -52,8 +53,13 @@ export const ProfileSettings: React.FC = () => {
         <div className="flex flex-col gap-5 text-color">
             <div className="flex flex-col gap-1 pb-3 border-b border-gray-200">
                 <h2 className="text-xl font-semibold primary-color">Profile</h2>
-                <p className="text-[15px] text-gray-500">Update how your name appears across the app.</p>
+                <p className="text-[15px] text-gray-500">Update how your name and picture appear across the app.</p>
             </div>
+
+            <ProfilePictureInput
+                onUploaded={() => showToast("Your profile picture has been updated.")}
+                onRemoved={() => showToast("Your profile picture has been removed.")}
+            />
 
             {
                 error && (

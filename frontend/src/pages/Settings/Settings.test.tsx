@@ -6,7 +6,7 @@ import { Route, Routes } from 'react-router-dom'
 import AuthorizedRoute from '../../components/ProtectedRoutes/AuthorizedRoute'
 import { useAuth } from '../../contexts/auth'
 import { API_URL as API } from '../../test/constants'
-import { testUser, withProfileName } from '../../test/handlers'
+import { TEST_PICTURE_URL, testUser, withProfileName, withProfilePicture } from '../../test/handlers'
 import { server } from '../../test/setup'
 import { renderWithProviders, screen, waitFor, within } from '../../test/renderWithProviders'
 import { Settings } from './Settings'
@@ -66,6 +66,26 @@ describe('Settings page', () => {
 })
 
 describe('Profile settings', () => {
+  it('shows a success toast after uploading a profile picture', async () => {
+    await renderSettings()
+
+    await userEvent.upload(
+      screen.getByLabelText('Profile picture input'),
+      new File(['image-bytes'], 'me.png', { type: 'image/png' }),
+    )
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Your profile picture has been updated.')
+  })
+
+  it('shows a success toast after removing the profile picture', async () => {
+    server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfilePicture(TEST_PICTURE_URL))))
+    await renderSettings()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Remove profile picture button' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Your profile picture has been removed.')
+  })
+
   it('prefills the name from the current user', async () => {
     await renderSettings()
 

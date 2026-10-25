@@ -4,6 +4,7 @@ from app.exceptions.user import UserAlreadyExists
 from app.schema.user import UserResponse, UserCreate
 from app.services.one_time_password_services import OneTimePasswordService, get_one_time_password_service
 from app.services.user_services import UserService, get_user_service
+from app.services.user_profile_services import UserProfileService, get_user_profile_service
 from app.models.user import User
 from app.auth.current_user import get_current_user_or_raise_http_error
 from app.auth.jwt import delete_tokens
@@ -20,10 +21,13 @@ async def get_current_user_data(current_user: User = Depends(get_current_user_or
 async def delete_current_user(
     response: Response,
     current_user: User = Depends(get_current_user_or_raise_http_error),
-    user_service: UserService = Depends(get_user_service)
+    user_service: UserService = Depends(get_user_service),
+    user_profile_service: UserProfileService = Depends(get_user_profile_service)
 ):
     user_id, email, name = current_user.id, current_user.email, current_user.display_name
 
+    # The database cascade removes the profile row but not its object in the bucket
+    await user_profile_service.delete_profile_picture(current_user.profile)
     await user_service.delete_user(current_user)
     delete_tokens(response)
     Logger.log(LogLevel.INFO, f"Deleted account for user ID '{user_id}'")

@@ -6,7 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.jwt import create_access_token, create_refresh_token
+from app.exceptions.s3 import S3ClientException
 from app.exceptions.user import UserEmailDoesNotExist
+from app.external_services.s3_client import S3Client
 from app.models.password_reset_token import PasswordResetToken
 from app.services.user_services import UserService
 
@@ -26,7 +28,7 @@ class TestRegister:
         body = response.json()
         assert body["email"] == "new@example.com"
         assert body["display_name"] == "new@example.com"
-        assert body["profile"] == {"name": None, "is_profile_completed": False}
+        assert body["profile"] == {"name": None, "is_profile_completed": False, "profile_picture_url": None}
         assert "password" not in body
 
     async def test_does_not_sign_the_user_in(self, client: AsyncClient):
@@ -127,7 +129,7 @@ class TestCurrentUser:
         body = response.json()
         assert body["email"] == "current@example.com"
         assert body["display_name"] == "Current User"
-        assert body["profile"] == {"name": "Current User", "is_profile_completed": True}
+        assert body["profile"] == {"name": "Current User", "is_profile_completed": True, "profile_picture_url": None}
 
     async def test_missing_cookie_returns_401(self, client: AsyncClient):
         response = await client.get("/api/v1/user/current")
@@ -184,6 +186,51 @@ class TestDeleteCurrentUser:
         set_cookie_headers = response.headers.get_list("set-cookie")
         assert any(h.startswith("access_token=") for h in set_cookie_headers)
         assert any(h.startswith("refresh_token=") for h in set_cookie_headers)
+
+    async def test_deletes_profile_picture_from_storage(
+        self, client: AsyncClient, s3_client, make_user, db_session: AsyncSession
+    ):
+        user = await make_user(email="delete-picture@example.com")
+        user.profile.profile_picture_key = "profile-pictures/1/me.webp"
+        await db_session.commit()
+        client.cookies.set("access_token", create_access_token({"sub": str(user.id)}))
+
+        response = await client.delete("/api/v1/user/current")
+
+        assert response.status_code == 204
+        s3_client.delete_object_quietly.assert_awaited_once_with("profile-pictures/1/me.webp")
+
+    async def test_without_a_profile_picture_storage_is_untouched(self, client: AsyncClient, s3_client, make_user):
+        user = await make_user(email="delete-no-picture@example.com")
+        client.cookies.set("access_token", create_access_token({"sub": str(user.id)}))
+
+        response = await client.delete("/api/v1/user/current")
+
+        assert response.status_code == 204
+        s3_client.delete_object_quietly.assert_not_awaited()
+
+    async def test_storage_failure_still_deletes_account(
+        self, client: AsyncClient, s3_client, make_user, db_session: AsyncSession
+    ):
+        user = await make_user(email="delete-s3-down@example.com")
+        user.profile.profile_picture_key = "profile-pictures/1/me.webp"
+        await db_session.commit()
+        client.cookies.set("access_token", create_access_token({"sub": str(user.id)}))
+        # Exercise the real quiet delete, with the underlying delete failing
+        s3_client.delete_object.side_effect = S3ClientException()
+
+        async def real_delete_object_quietly(key):
+            await S3Client.delete_object_quietly(s3_client, key)
+
+        s3_client.delete_object_quietly.side_effect = real_delete_object_quietly
+
+        response = await client.delete("/api/v1/user/current")
+
+        assert response.status_code == 204
+        s3_client.delete_object.assert_awaited_once_with("profile-pictures/1/me.webp")
+        db_session.expire_all()
+        with pytest.raises(UserEmailDoesNotExist):
+            await UserService(db_session).get_user_by_email("delete-s3-down@example.com")
 
     async def test_removes_password_reset_tokens(
         self, client: AsyncClient, make_user, db_session: AsyncSession
