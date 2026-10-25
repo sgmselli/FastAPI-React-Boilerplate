@@ -4,6 +4,7 @@ from app.core.settings.base import BaseAppSettings
 
 class DevelopmentSettings(BaseAppSettings):
     debug: bool = True
+    log_level: str = "DEBUG"
     frontend_url: str = "http://localhost:3000"
     allowed_hosts: list[str] = ["*"]
     allow_origins: list[str] = ["http://localhost:3000"]

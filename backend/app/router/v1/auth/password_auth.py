@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Response, Cookie, status
 from fastapi.security import OAuth2PasswordRequestForm
 from uuid import uuid4
@@ -10,7 +11,8 @@ from app.services.user_services import UserService, get_user_service
 from app.auth.jwt import create_access_token, create_refresh_token, store_tokens, decode_refresh_token, \
     store_access_token, delete_tokens, is_token_issued_before_password_update
 from app.auth.password import verify_password
-from app.utils.logging import Logger, LogLevel
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -26,15 +28,15 @@ async def login(
     try:
         user = await user_service.get_user_by_email(email)
     except UserEmailDoesNotExist:
-        Logger.log(LogLevel.ERROR, f"A user entered an email '{email}' which does not exist")
+        logger.info("Login attempted for an email which does not exist")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password.")
 
     if user.password is None or not verify_password(password, user.password):
-        Logger.log(LogLevel.ERROR, f"A user entered an incorrect password for email '{email}'")
+        logger.info("Incorrect password entered for user ID %s", user.id)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password.")
 
     if not user.is_email_verified:
-        Logger.log(LogLevel.INFO, f"User ID '{user.id}' tried to log in before verifying their email")
+        logger.info("User ID %s tried to log in before verifying their email", user.id)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Please verify your email.")
 
     access_token = create_access_token({
@@ -60,7 +62,7 @@ async def refresh_auth_tokens(
     try:
         decoded = decode_refresh_token(refresh_token)
     except JWTError as e:
-        Logger.log(LogLevel.ERROR, f"Failed to decode refresh token due to error: '{e}'")
+        logger.info("Failed to decode refresh token: %s", e)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You must be authorized to access.", headers={"WWW-Authenticate": "Bearer"})
 
     sub = decoded.get("sub")
@@ -70,11 +72,11 @@ async def refresh_auth_tokens(
     try:
         user = await user_service.get_user_by_id(int(sub))
     except (UserIdDoesNotExist, ValueError):
-        Logger.log(LogLevel.ERROR, f"User ID `{sub}` from refresh token sub does not exist")
+        logger.warning("User ID %s from refresh token sub does not exist", sub)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You must be authorized to access.", headers={"WWW-Authenticate": "Bearer"})
 
     if is_token_issued_before_password_update(decoded, user):
-        Logger.log(LogLevel.ERROR, f"Refresh token for user ID `{sub}` was issued before their password was last updated")
+        logger.info("Refresh token for user ID %s was issued before their password was last updated", sub)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You must be authorized to access.", headers={"WWW-Authenticate": "Bearer"})
 
     access_token = create_access_token(data={

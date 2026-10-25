@@ -1,3 +1,4 @@
+import logging
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -8,8 +9,9 @@ from app.exceptions.user import UserGoogleIdDoesNotExist, UserEmailDoesNotExist
 from app.schema.user import UserResponse, UserCreate
 from app.services.user_services import UserService, get_user_service
 from app.auth.jwt import create_access_token, create_refresh_token, store_tokens
-from app.utils.logging import Logger, LogLevel
 from app.auth.oauth.google_oauth import google_oath
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -44,7 +46,7 @@ async def auth_google_callback(
                     await user_service.remove_password(user)
                 await user_service.link_google_id(user, google_id)
             except UserEmailDoesNotExist:
-                Logger.log(LogLevel.INFO, "Google ID does not exist for user. Creating user.")
+                logger.info("Google ID does not exist for user. Creating user.")
                 user_create = UserCreate(
                     email=email,
                     google_id=google_id
@@ -73,6 +75,6 @@ async def auth_google_callback(
         return redirect
 
 
-    except Exception as e:
-        Logger.log( LogLevel.ERROR, f"Google OAuth callback error: {str(e)}")
+    except Exception:
+        logger.exception("Google OAuth callback error")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Google authentication failed")

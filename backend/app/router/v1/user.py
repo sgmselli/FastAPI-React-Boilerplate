@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.exceptions.user import UserAlreadyExists
@@ -9,7 +10,8 @@ from app.models.user import User
 from app.auth.current_user import get_current_user_or_raise_http_error
 from app.auth.jwt import delete_tokens
 from app.celery.tasks.email_tasks import task_send_otp_email, task_send_account_deleted_email
-from app.utils.logging import Logger, LogLevel
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -30,12 +32,12 @@ async def delete_current_user(
     await user_profile_service.delete_profile_picture(current_user.profile)
     await user_service.delete_user(current_user)
     delete_tokens(response)
-    Logger.log(LogLevel.INFO, f"Deleted account for user ID '{user_id}'")
+    logger.info("Deleted account for user ID %s", user_id)
 
     try:
         task_send_account_deleted_email.delay(email, name)
-    except Exception as e:
-        Logger.log(LogLevel.ERROR, f"Failed to queue account deleted email for user ID '{user_id}': {e}")
+    except Exception:
+        logger.exception("Failed to queue account deleted email for user ID %s", user_id)
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(
@@ -52,7 +54,7 @@ async def register_user(
 
     try:
         task_send_otp_email.delay(user.email, user.display_name, raw_code)
-    except Exception as e:
-        Logger.log(LogLevel.ERROR, f"Failed to queue one time password email for user ID '{user.id}': {e}")
+    except Exception:
+        logger.exception("Failed to queue one time password email for user ID %s", user.id)
 
     return user

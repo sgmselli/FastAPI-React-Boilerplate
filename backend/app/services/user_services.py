@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 
 from fastapi import Depends
@@ -11,7 +12,8 @@ from app.models.user_profile import UserProfile
 from app.schema.user import UserCreate
 from app.schema.user_profile import UserProfileCreate
 from app.auth.password import hash_password
-from app.utils.logging import Logger, LogLevel
+
+logger = logging.getLogger(__name__)
 
 class UserService:
 
@@ -36,7 +38,7 @@ class UserService:
         result = await self.session.execute(select(User).where(User.google_id == google_id))
         user = result.scalars().first()
         if not user:
-            Logger.log(LogLevel.ERROR, f"User with Google ID '{google_id}' does not exist.")
+            logger.debug("User with Google ID %s does not exist", google_id)
             raise UserGoogleIdDoesNotExist()
         return user
 
@@ -47,7 +49,7 @@ class UserService:
         result = await self.session.execute(select(User).where(User.email == email))
         existing = result.scalars().first()
         if existing:
-            Logger.log(LogLevel.ERROR, f"User with email '{email}' already exists.")
+            logger.info("Registration attempted for an email which already exists")
             raise UserAlreadyExists(email)
 
         user = User(
