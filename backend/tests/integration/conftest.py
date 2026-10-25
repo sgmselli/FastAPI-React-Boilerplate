@@ -13,9 +13,11 @@ from sqlalchemy.pool import NullPool
 from app.auth.password import hash_password
 from app.core.config import settings
 from app.db.session import get_session
+from app.external_services.s3_client import get_s3_client
 from app.main import app
 from app.models.user import User
 from app.models.user_profile import UserProfile
+from tests.unit.mocks import make_mock_s3_client
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 
@@ -97,6 +99,20 @@ async def client(db_session: AsyncSession):
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def s3_client(client: AsyncClient, monkeypatch):
+    """
+    Mock S3Client for requests made through `client`, so no test touches a real
+    bucket. Services get the client through DI, but the response schema looks it
+    up directly to sign URLs, so both are replaced. Depends on `client`, whose
+    teardown clears every dependency override.
+    """
+    mock = make_mock_s3_client()
+    app.dependency_overrides[get_s3_client] = lambda: mock
+    monkeypatch.setattr("app.schema.user_profile.get_s3_client", lambda: mock)
+    return mock
 
 
 # bcrypt hashing is ~250ms/call - hash once per session and reuse for

@@ -1,7 +1,10 @@
 import pytest
+
+from app.exceptions.s3 import S3ClientException
 from pydantic import ValidationError
 
 from app.models.user_profile import UserProfile
+from tests.unit.mocks import make_mock_s3_client
 from app.schema.user_profile import UserProfileCreate, UserProfileResponse, UserProfileUpdate
 
 
@@ -65,8 +68,45 @@ class TestUserProfileUpdate:
 class TestUserProfileResponse:
     def test_reads_completion_from_the_model(self):
         response = UserProfileResponse.model_validate(UserProfile(name="Jane Doe"))
-        assert response.model_dump() == {"name": "Jane Doe", "is_profile_completed": True}
+        assert response.model_dump() == {"name": "Jane Doe", "is_profile_completed": True, "profile_picture_url": None}
 
     def test_empty_profile_is_not_completed(self):
         response = UserProfileResponse.model_validate(UserProfile())
-        assert response.model_dump() == {"name": None, "is_profile_completed": False}
+        assert response.model_dump() == {"name": None, "is_profile_completed": False, "profile_picture_url": None}
+
+
+class TestProfilePictureUrl:
+    def test_none_without_a_picture_and_s3_untouched(self, monkeypatch):
+        s3_client = make_mock_s3_client()
+        monkeypatch.setattr("app.schema.user_profile.get_s3_client", lambda: s3_client)
+
+        response = UserProfileResponse.model_validate(UserProfile())
+
+        assert response.profile_picture_url is None
+        s3_client.generate_presigned_url.assert_not_called()
+
+    def test_signed_url_for_the_stored_key(self, monkeypatch):
+        s3_client = make_mock_s3_client()
+        monkeypatch.setattr("app.schema.user_profile.get_s3_client", lambda: s3_client)
+
+        response = UserProfileResponse.model_validate(UserProfile(profile_picture_key="profile-pictures/1/a.webp"))
+
+        assert response.profile_picture_url == "https://bucket.test/profile-pictures/1/a.webp?signed"
+        s3_client.generate_presigned_url.assert_called_once_with("profile-pictures/1/a.webp", expires_in=3600)
+
+    def test_key_is_never_serialised(self, monkeypatch):
+        monkeypatch.setattr("app.schema.user_profile.get_s3_client", make_mock_s3_client)
+
+        response = UserProfileResponse.model_validate(UserProfile(profile_picture_key="profile-pictures/1/a.webp"))
+
+        assert "profile_picture_key" not in response.model_dump()
+        assert "profile_picture_key" not in response.model_dump_json()
+
+    def test_none_when_signing_fails(self, monkeypatch):
+        s3_client = make_mock_s3_client()
+        s3_client.generate_presigned_url.side_effect = S3ClientException()
+        monkeypatch.setattr("app.schema.user_profile.get_s3_client", lambda: s3_client)
+
+        response = UserProfileResponse.model_validate(UserProfile(profile_picture_key="profile-pictures/1/a.webp"))
+
+        assert response.profile_picture_url is None

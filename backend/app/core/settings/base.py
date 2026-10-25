@@ -29,6 +29,10 @@ class BaseAppSettings(BaseSettings):
     otp_max_attempts: int = 5
     otp_resend_cooldown_seconds: int = 60
     otp_fixed_code: str | None = None
+    profile_picture_max_bytes: int = 5 * 1024 * 1024
+    profile_picture_max_pixels: int = 40_000_000
+    profile_picture_size: int = 512
+    profile_picture_url_expire_seconds: int = 3600
 
     debug: bool | None = None
     frontend_url: str | None = None
