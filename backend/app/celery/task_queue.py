@@ -1,8 +1,9 @@
 from celery import Celery
-from celery.signals import setup_logging
+from celery.signals import celeryd_init, setup_logging
 
 from app.core.config import settings
 from app.utils.logging import configure_logging
+from app.utils.sentry import init_sentry
 
 celery_task_queue = Celery(
     "worker",
@@ -17,3 +18,7 @@ celery_task_queue = Celery(
 @setup_logging.connect
 def configure_worker_logging(**kwargs):
     configure_logging()
+
+@celeryd_init.connect
+def init_worker_sentry(**kwargs):
+    init_sentry()

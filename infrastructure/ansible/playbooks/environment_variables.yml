@@ -37,6 +37,7 @@
           BREVO_API_KEY={{ brevo_api_key }}
           FROM_EMAIL={{ from_email }}
           OTP_SECRET_KEY={{ otp_secret_key }}
+          SENTRY_DSN={{ sentry_dsn | default('') }}
 
     - name: Create env file for database environment variables
       copy:

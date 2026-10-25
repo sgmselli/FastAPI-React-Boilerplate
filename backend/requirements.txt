@@ -65,6 +65,7 @@ redis==7.1.0
 rich==14.2.0
 rsa==4.9.1
 s3transfer==0.14.0
+sentry-sdk==2.73.0
 shellingham==1.5.4
 sib-api-v3-sdk==7.6.0
 six==1.17.0
