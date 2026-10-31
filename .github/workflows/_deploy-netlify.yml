@@ -16,6 +16,11 @@ jobs:
 
       - name: Build
         working-directory: frontend
+        env:
+          VITE_SENTRY_DSN: ${{ vars.SENTRY_DSN_FRONTEND }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_FRONTEND }}
         run: npm run build
 
       - name: Deploy to Netlify
