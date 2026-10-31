@@ -5,9 +5,11 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.router.v1.router import router
 from app.core.config import settings
 from app.utils.logging import configure_logging
+from app.utils.sentry import init_sentry
 
 def create_app() -> FastAPI:
     configure_logging()
+    init_sentry()
     _app = FastAPI(**settings.fast_api_kwargs)
     _app.include_router(router, prefix=settings.api_v1_prefix)
     _app.add_middleware(

@@ -110,7 +110,15 @@ export const PrivacyPolicy: React.FC = () => {
                 <ul className="list-disc list-inside space-y-2 mt-3 mb-5 text-sm">
                     <li><span className="font-semibold">Google Analytics (Google LLC)</span></li>
                     <li><span className="font-semibold">Google Sign-In (Google LLC)</span> — if you choose to sign in with Google</li>
+                    <li><span className="font-semibold">Sentry (Functional Software, Inc.)</span> — error monitoring</li>
                 </ul>
+
+                <p className="text-sm">
+                    When something goes wrong, technical details of the error (such as the page, browser and stack trace) are sent to Sentry so we can fix it.
+                    These reports do NOT include your password, cookies or the contents of forms you submit.
+                    Sentry processes this data as described in their Privacy Policy:{" "}
+                    <a className="link" href="https://sentry.io/privacy/">https://sentry.io/privacy/</a>
+                </p>
 
                 <p className="text-sm">
                     Google may process data as described in their Privacy Policy:{" "}

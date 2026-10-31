@@ -1,9 +1,12 @@
+import logging
 from io import BytesIO
 from PIL import Image, ImageOps
 from pillow_heif import register_heif_opener
 
 from app.core.config import settings
 from app.exceptions.image import InvalidImage
+
+logger = logging.getLogger(__name__)
 
 # iPhones save HEIC by default
 register_heif_opener()
@@ -24,6 +27,7 @@ def process_profile_picture(data: bytes) -> bytes:
     try:
         image = Image.open(BytesIO(data))
     except Exception:
+        logger.warning("Could not open uploaded image", exc_info=True)
         raise InvalidImage()
 
     if image.format not in ALLOWED_IMAGE_FORMATS:
@@ -37,6 +41,7 @@ def process_profile_picture(data: bytes) -> bytes:
     try:
         image.load()
     except Exception:
+        logger.warning("Could not decode uploaded image", exc_info=True)
         raise InvalidImage()
 
     # Phone photos are often stored sideways with an EXIF rotation flag, which is

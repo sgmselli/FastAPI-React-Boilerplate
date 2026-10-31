@@ -59,6 +59,7 @@ class BaseAppSettings(BaseSettings):
     redis_password: str | None = None
     brevo_api_key: str | None = None
     from_email: str | None = None
+    sentry_dsn: str | None = None
 
     def is_production(self) -> bool:
         return self.app_env == AppEnvTypes.PRODUCTION
