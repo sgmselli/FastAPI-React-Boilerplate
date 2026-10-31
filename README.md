@@ -14,3 +14,4 @@ A boilerplate for a FastAPI backend (with Celery + Redis) and a React/TypeScript
 - [Email Delivery](documentation/email.md) — sending transactional email via Brevo and Celery
 - [File Storage](documentation/file-storage.md) — uploading, serving and deleting objects in S3-compatible storage
 - [Deployment](documentation/deployment/index.md) — the infrastructure behind the app and how to deploy it end to end
+- [Monitoring](documentation/monitoring/index.md) — logging and monitoring that covers the project + set up
