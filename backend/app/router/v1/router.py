@@ -1,9 +1,11 @@
 from fastapi import APIRouter
 
-from app.router.v1 import user, user_profile
+from app.router.v1 import health, user, user_profile
 from app.router.v1.auth import  password_auth, google_auth, password_reset, otp
 
 router = APIRouter()
+
+router.include_router(health.router, prefix="/health", tags=["health"])
 
 router.include_router(user.router, prefix="/user", tags=["user"])
 router.include_router(user_profile.router, prefix="/profile", tags=["profile"])
