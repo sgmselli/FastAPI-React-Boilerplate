@@ -21,6 +21,17 @@ class JsonFormatter(logging.Formatter):
             log["exception"] = self.formatException(record.exc_info)
         return json.dumps(log)
 
+class ExcludeHealthChecks(logging.Filter):
+    """
+    Drops access log lines for the health endpoint, which the uptime check calls several times a minute
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        # Uvicorn's access log args are (client, method, path, http_version, status)
+        if isinstance(record.args, tuple) and len(record.args) >= 3:
+            return not str(record.args[2]).startswith(f"{settings.api_v1_prefix}/health")
+        return True
+
 def configure_logging() -> None:
     formatter = "json" if settings.is_production() else "text"
 
@@ -30,6 +41,9 @@ def configure_logging() -> None:
         "formatters": {
             "text": {"format": "%(asctime)s %(levelname)s [%(name)s] %(message)s"},
             "json": {"()": JsonFormatter},
+        },
+        "filters": {
+            "exclude_health_checks": {"()": ExcludeHealthChecks},
         },
         "handlers": {
             "console": {
@@ -45,6 +59,6 @@ def configure_logging() -> None:
             # so its logs go through the root handler in the same format
             "uvicorn": {"handlers": [], "propagate": True},
             "uvicorn.error": {"handlers": [], "propagate": True},
-            "uvicorn.access": {"handlers": [], "propagate": True},
+            "uvicorn.access": {"handlers": [], "propagate": True, "filters": ["exclude_health_checks"]},
         },
     })
