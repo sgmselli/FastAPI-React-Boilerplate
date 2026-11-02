@@ -10,6 +10,10 @@ registry_name = ""
 # Contents of your public key, e.g. `cat ~/.ssh/id_ed25519.pub`
 ssh_public_key = "ssh-ed25519 AAAA... you@example.com"
 
+# Uptime and droplet alerts. The email must belong to a member of your DigitalOcean team.
+alert_email      = "sellings.dev@gmail.com"
+health_check_url = "https://fastapireactboilerplate.com/api/v1/health"
+
 # Optional overrides - defaults shown.
 # project_name    = "fastapi-react"
 # environment     = "prod"

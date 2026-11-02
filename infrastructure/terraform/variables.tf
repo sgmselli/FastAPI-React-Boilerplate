@@ -109,3 +109,17 @@ variable "vpc_ip_range" {
   type        = string
   default     = "10.10.10.0/24"
 }
+
+#########################
+#      Monitoring       #
+#########################
+
+variable "alert_email" {
+  description = "Where uptime and droplet alerts are sent. Must belong to a member of the DigitalOcean team."
+  type        = string
+}
+
+variable "health_check_url" {
+  description = "Public URL of the API health endpoint, e.g. https://api.example.com/api/v1/health"
+  type        = string
+}

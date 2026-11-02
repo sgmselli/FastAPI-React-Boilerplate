@@ -17,3 +17,4 @@ On the droplet, read logs with `docker logs backend` or `docker logs worker`. Ea
 ## Guides
 
 1. [Sentry](sentry.md) — error tracking for the backend, worker and frontend, and searchable backend logs
+2. [Uptime & Alerts](uptime-and-alerts.md) — the health endpoint, external uptime checks and droplet resource alerts
