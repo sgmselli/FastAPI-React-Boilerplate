@@ -2,7 +2,7 @@ import { AxiosError, AxiosHeaders } from 'axios'
 import type { AxiosResponse } from 'axios'
 import { describe, expect, it } from 'vitest'
 
-import { parseApiError } from './apiErrors'
+import { parseApiError, TOO_MANY_REQUESTS_MESSAGE } from './apiErrors'
 
 const FALLBACK = 'Something failed.'
 
@@ -42,6 +42,12 @@ describe('parseApiError', () => {
       message: null,
       fieldErrors: { name: 'Name is invalid', password: 'Password is too weak' },
     })
+  })
+
+  it('shows a rate limit message for a 429 without a detail', () => {
+    const result = parseApiError(apiError('<html>429 Too Many Requests</html>', 429), FALLBACK)
+
+    expect(result).toEqual({ message: TOO_MANY_REQUESTS_MESSAGE, fieldErrors: {} })
   })
 
   it('falls back when the response has no detail', () => {

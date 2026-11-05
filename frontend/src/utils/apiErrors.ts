@@ -7,6 +7,8 @@ type ApiValidationError = {
 
 export type FieldErrors<Field extends string> = Partial<Record<Field, string>>;
 
+export const TOO_MANY_REQUESTS_MESSAGE = "Too many attempts. Please wait a minute and try again.";
+
 export interface ParsedApiError<Field extends string> {
     message: string | null;
     fieldErrors: FieldErrors<Field>;
@@ -19,7 +21,8 @@ export const parseApiError = <Field extends string>(err: unknown, fallback: stri
      * FastAPI sends `detail` as a string for errors raised by the app, and as a
      * list for request validation errors - each keyed by `loc`, e.g. ["body", "name"].
      * A string becomes `message`; a list becomes `fieldErrors` with `message` left
-     * null, so each form decides where field messages go. Anything else gets `fallback`.
+     * null, so each form decides where field messages go. A 429 from nginx's rate
+     * limiting has no `detail`, so it gets its own message. Anything else gets `fallback`.
      */
     const detail = axios.isAxiosError(err) ? err.response?.data?.detail : undefined;
 
@@ -36,6 +39,10 @@ export const parseApiError = <Field extends string>(err: unknown, fallback: stri
         });
 
         return { message: null, fieldErrors };
+    }
+
+    if (axios.isAxiosError(err) && err.response?.status === 429) {
+        return { message: TOO_MANY_REQUESTS_MESSAGE, fieldErrors: {} };
     }
 
     return { message: fallback, fieldErrors: {} };
