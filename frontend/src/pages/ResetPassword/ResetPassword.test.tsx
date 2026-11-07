@@ -6,6 +6,7 @@ import { API_URL as API } from '../../test/constants'
 import { server } from '../../test/setup'
 import { renderWithProviders, screen, waitFor } from '../../test/renderWithProviders'
 import { ResetPassword } from './ResetPassword'
+import { TOO_MANY_REQUESTS_MESSAGE } from '../../utils/apiErrors'
 
 const VALIDATE_URL = `${API}/auth/password-reset/validate`
 const CONFIRM_URL = `${API}/auth/password-reset/confirm`
@@ -94,12 +95,47 @@ describe('ResetPassword token handling', () => {
     expect(validateCalled).toBe(false)
   })
 
-  it('shows the expired state when validation errors', async () => {
+  it('offers a retry instead of the expired state when validation errors', async () => {
     server.use(http.post(VALIDATE_URL, () => new HttpResponse(null, { status: 500 })))
 
     renderWithProviders(<ResetPassword />, { route: '/password-reset' })
 
-    expect(await screen.findByRole('heading', { name: 'Link expired' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: "Couldn't check your link" }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("We couldn't check your reset link. Please try again."),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Link expired' })).not.toBeInTheDocument()
+  })
+
+  it('shows the rate limit message when validation is rate limited', async () => {
+    server.use(
+      http.post(VALIDATE_URL, () => new HttpResponse('<html>429</html>', { status: 429 })),
+    )
+
+    renderWithProviders(<ResetPassword />, { route: '/password-reset' })
+
+    expect(await screen.findByText(TOO_MANY_REQUESTS_MESSAGE)).toBeInTheDocument()
+  })
+
+  it('validates the same token again when retrying', async () => {
+    // The token has already been wiped from the address bar, so a reload would lose it
+    const bodies: Record<string, unknown>[] = []
+    server.use(
+      http.post(VALIDATE_URL, async ({ request }) => {
+        bodies.push((await request.json()) as Record<string, unknown>)
+        return bodies.length === 1
+          ? new HttpResponse(null, { status: 429 })
+          : HttpResponse.json({ valid: true })
+      }),
+    )
+
+    renderWithProviders(<ResetPassword />, { route: '/password-reset' })
+    await userEvent.click(await screen.findByRole('button', { name: 'Try again button' }))
+
+    expect(await screen.findByRole('heading', { name: 'Reset password' })).toBeInTheDocument()
+    expect(bodies).toEqual([{ token: 'raw-token' }, { token: 'raw-token' }])
   })
 
   it('offers a way to request a new link when expired', async () => {
