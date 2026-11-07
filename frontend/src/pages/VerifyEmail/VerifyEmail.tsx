@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { resendOtp } from "../../api/otp";
 import { useAuth } from "../../contexts/auth";
 import { Loading } from "../../components/Loading";
 import usePageTitle from "../../hooks/usePageTitle";
+import useCooldown from "../../hooks/useCooldown";
 import { parseApiError } from "../../utils/apiErrors";
 
 // Mirrors otp_resend_cooldown_seconds on the backend, which ignores resends inside it
@@ -27,18 +28,11 @@ export const VerifyEmail: React.FC = () => {
     const [resending, setResending] = useState<boolean>(false);
     const [resendMessage, setResendMessage] = useState<string | null>(null);
     // A code was sent just before arriving here, so the cooldown starts straight away
-    const [secondsUntilResend, setSecondsUntilResend] = useState<number>(RESEND_COOLDOWN_SECONDS);
+    const { secondsLeft: secondsUntilResend, start: startResendCooldown } = useCooldown(RESEND_COOLDOWN_SECONDS, true);
 
     const { verifyEmail } = useAuth();
 
     const navigate = useNavigate();
-
-    useEffect(() => {
-        if (secondsUntilResend <= 0) return;
-
-        const timer = setTimeout(() => setSecondsUntilResend((seconds) => seconds - 1), 1000);
-        return () => clearTimeout(timer);
-    }, [secondsUntilResend]);
 
     // -----------------------------
     // Handle Verify
@@ -76,7 +70,7 @@ export const VerifyEmail: React.FC = () => {
             const { message } = await resendOtp({ email });
             setResendMessage(message);
             setCode("");
-            setSecondsUntilResend(RESEND_COOLDOWN_SECONDS);
+            startResendCooldown();
         } catch (e: unknown) {
             const { message } = parseApiError(e, "Failed to send a new code.");
             setError(message ?? "Failed to send a new code.");

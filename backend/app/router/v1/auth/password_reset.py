@@ -35,6 +35,9 @@ async def request_password_reset(
         logger.info("A password reset was requested for an email which does not exist")
         return PasswordResetMessageResponse(message=GENERIC_REQUEST_MESSAGE)
 
+    if not await password_reset_token_service.can_request(user.id):
+        return PasswordResetMessageResponse(message=GENERIC_REQUEST_MESSAGE)
+
     raw_token = await password_reset_token_service.create(user.id)
     reset_url = password_reset_token_service.get_reset_url(raw_token)
 

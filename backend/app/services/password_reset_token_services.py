@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import secrets
 
@@ -41,6 +41,20 @@ class PasswordResetTokenService:
         if not token.is_valid:
             raise PasswordResetTokenInvalid()
         return token
+
+    async def can_request(self, user_id: int) -> bool:
+        result = await self.session.execute(
+            select(PasswordResetToken.created_at)
+            .where(PasswordResetToken.user_id == user_id)
+            .order_by(PasswordResetToken.created_at.desc())
+            .limit(1)
+        )
+        last_created_at = result.scalars().first()
+        if last_created_at is None:
+            return True
+
+        cooldown_cutoff = last_created_at + timedelta(seconds=settings.password_reset_cooldown_seconds)
+        return datetime.now(timezone.utc) >= cooldown_cutoff
 
     def get_reset_url(self, raw_token: str) -> str:
         return f"{settings.frontend_url}/password-reset#token={raw_token}"

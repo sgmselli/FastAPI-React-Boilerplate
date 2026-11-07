@@ -5,6 +5,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.exceptions.password_reset_token import (
     PasswordResetTokenDoesNotExist,
     PasswordResetTokenInvalid,
@@ -90,6 +91,43 @@ class TestMarkAsUsed:
 
         token = (await db_session.execute(select(PasswordResetToken))).scalars().one()
         assert token.used_at is not None
+
+
+class TestCanRequest:
+    async def test_true_when_no_token_has_been_issued(
+        self, db_session: AsyncSession, make_user
+    ):
+        user = await make_user(email="svc8@example.com")
+
+        assert await PasswordResetTokenService(db_session).can_request(user.id)
+
+    async def test_false_within_the_cooldown(self, db_session: AsyncSession, make_user):
+        user = await make_user(email="svc9@example.com")
+        service = PasswordResetTokenService(db_session)
+        await service.create(user.id)
+
+        assert not await service.can_request(user.id)
+
+    async def test_true_once_the_cooldown_has_passed(
+        self, db_session: AsyncSession, make_user
+    ):
+        user = await make_user(email="svc10@example.com")
+        service = PasswordResetTokenService(db_session)
+        await service.create(user.id)
+
+        token = (await db_session.execute(select(PasswordResetToken))).scalars().one()
+        token.created_at = datetime.now(timezone.utc) - timedelta(seconds=settings.password_reset_cooldown_seconds + 1)
+        await db_session.flush()
+
+        assert await service.can_request(user.id)
+
+    async def test_ignores_other_users_tokens(self, db_session: AsyncSession, make_user):
+        user = await make_user(email="svc11@example.com")
+        other = await make_user(email="svc12@example.com")
+        service = PasswordResetTokenService(db_session)
+        await service.create(other.id)
+
+        assert await service.can_request(user.id)
 
 
 class TestCascadeDelete:
