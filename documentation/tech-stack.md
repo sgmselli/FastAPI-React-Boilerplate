@@ -11,7 +11,7 @@ Python 3.12, [FastAPI](https://fastapi.tiangolo.com/) served by [Uvicorn](https:
 | ORM | SQLAlchemy 2.0 (async) with asyncpg |
 | Migrations | Alembic 1.17 |
 | Validation | Pydantic 2.12 + pydantic-settings |
-| Auth | python-jose (JWT), passlib + bcrypt (hashing), Authlib (Google OAuth) |
+| Auth | python-jose (JWT), pwdlib + Argon2 (hashing), Authlib (Google OAuth) |
 | Background jobs | Celery 5.6 with Redis as broker |
 | Tests | pytest + pytest-asyncio |
 

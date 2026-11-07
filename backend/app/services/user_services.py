@@ -44,7 +44,7 @@ class UserService:
 
     async def create_user_with_password(self, user_create: UserCreate) -> User:
         email = user_create.email.strip().lower()
-        hashed_password = hash_password(user_create.password)
+        hashed_password = await hash_password(user_create.password)
 
         result = await self.session.execute(select(User).where(User.email == email))
         existing = result.scalars().first()
@@ -69,7 +69,7 @@ class UserService:
         await self.session.flush()
 
     async def update_user_password(self, user: User, password: str) -> User:
-        user.password = hash_password(password)
+        user.password = await hash_password(password)
         user.password_updated_at = datetime.now(timezone.utc)
 
         self.session.add(user)

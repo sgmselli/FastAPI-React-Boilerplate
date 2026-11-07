@@ -31,7 +31,7 @@ async def login(
         logger.info("Login attempted for an email which does not exist")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password.")
 
-    if user.password is None or not verify_password(password, user.password):
+    if user.password is None or not await verify_password(password, user.password):
         logger.info("Incorrect password entered for user ID %s", user.id)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password.")
 
