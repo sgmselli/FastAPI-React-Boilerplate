@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatTitle } from './wordFormatting'
+import { formatTitle, normalizeEmail } from './normalizations'
+
+describe('normalizeEmail', () => {
+  it('lowercases the email', () => {
+    expect(normalizeEmail('Test@Example.COM')).toBe('test@example.com')
+  })
+
+  it('trims surrounding whitespace', () => {
+    expect(normalizeEmail('  test@example.com  ')).toBe('test@example.com')
+  })
+})
 
 describe('formatTitle', () => {
   it('returns an empty string for null', () => {

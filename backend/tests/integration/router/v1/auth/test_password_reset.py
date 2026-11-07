@@ -11,6 +11,7 @@ from jose import jwt as jose_jwt
 from app.auth.password import verify_password
 from app.core.config import settings
 from app.models.password_reset_token import PasswordResetToken
+from app.router.v1.auth.password_reset import GENERIC_REQUEST_MESSAGE
 from app.services.user_services import UserService
 
 REQUEST_URL = "/api/v1/auth/password-reset/request"
@@ -115,6 +116,36 @@ class TestRequest:
         reset_url = queued_email.delay.call_args.args[2]
         assert "#token=" in reset_url
         assert "?token=" not in reset_url
+
+    async def test_within_the_cooldown_sends_nothing(
+        self, client: AsyncClient, db_session: AsyncSession, make_user, queued_email
+    ):
+        await make_user(email="cooldown@example.com")
+        await client.post(REQUEST_URL, json={"email": "cooldown@example.com"})
+        queued_email.reset_mock()
+
+        response = await client.post(REQUEST_URL, json={"email": "cooldown@example.com"})
+
+        assert response.status_code == 202
+        assert response.json() == {"message": GENERIC_REQUEST_MESSAGE}
+        queued_email.delay.assert_not_called()
+        tokens = (await db_session.execute(select(PasswordResetToken))).scalars().all()
+        assert len(tokens) == 1
+
+    async def test_sends_again_once_the_cooldown_has_passed(
+        self, client: AsyncClient, db_session: AsyncSession, make_user, queued_email
+    ):
+        await make_user(email="cooldown2@example.com")
+        await client.post(REQUEST_URL, json={"email": "cooldown2@example.com"})
+        queued_email.reset_mock()
+
+        token = (await db_session.execute(select(PasswordResetToken))).scalars().one()
+        token.created_at = datetime.now(timezone.utc) - timedelta(seconds=settings.password_reset_cooldown_seconds + 1)
+        await db_session.flush()
+
+        await client.post(REQUEST_URL, json={"email": "cooldown2@example.com"})
+
+        queued_email.delay.assert_called_once()
 
 
 class TestValidate:

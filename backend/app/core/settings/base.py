@@ -29,6 +29,7 @@ class BaseAppSettings(BaseSettings):
     otp_max_attempts: int = 5
     otp_resend_cooldown_seconds: int = 60
     otp_fixed_code: str | None = None
+    password_reset_cooldown_seconds: int = 60
     profile_picture_max_bytes: int = 5 * 1024 * 1024
     profile_picture_max_pixels: int = 40_000_000
     profile_picture_size: int = 512

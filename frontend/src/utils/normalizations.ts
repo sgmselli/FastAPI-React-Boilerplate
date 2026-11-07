@@ -1,4 +1,6 @@
-export const formatTitle = (title: string | null | undefined) => {
+export const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
+export const formatTitle =(title: string | null | undefined) => {
     /**
      * Take in a string parameter and capitalize the first word + remove hythens and replace with space.
      */
