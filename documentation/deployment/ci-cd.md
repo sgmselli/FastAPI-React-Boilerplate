@@ -17,7 +17,7 @@ All three CI workflows follow the same shape: a `changes` job decides whether an
 
 Each also sets `cancel-in-progress: true`, so pushing a new commit kills the previous run rather than queueing behind it.
 
-**[`_test-backend.yml`](../../.github/workflows/_test-backend.yml)** spins up `postgres:18` and `redis:7-alpine` as service containers, points the app at them via `localhost`, runs Alembic migrations, then `pytest`. Because the services are real, both the unit and integration suites run here.
+**[`_test-backend.yml`](../../.github/workflows/_test-backend.yml)** spins up `postgres:18.6` and `redis:7.4.12-alpine` as service containers (the same versions production runs), points the app at them via `localhost`, runs Alembic migrations, then `pytest`. Because the services are real, both the unit and integration suites run here.
 
 **[`_test-frontend.yml`](../../.github/workflows/_test-frontend.yml)** runs lint, `tsc -b --noEmit`, the Vitest suite, and then a production `npm run build`. That last step matters — it's the same build [`_deploy-netlify.yml`](../../.github/workflows/_deploy-netlify.yml) ships, so a build break is caught on the PR rather than at deploy time.
 
