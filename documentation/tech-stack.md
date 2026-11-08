@@ -42,7 +42,7 @@ The API client uses a **relative** base URL (`/api/v1`), so the frontend never n
 
 PostgreSQL 18, accessed asynchronously via SQLAlchemy + asyncpg.
 
-Schema changes are managed by Alembic; migrations live in `backend/app/db/migrations/versions/` and are applied automatically on container start by `backend/run.sh`.
+Schema changes are managed by Alembic; migrations live in `backend/app/db/migrations/versions/` and are applied by a one-off `migrate` service locally and by a deploy step in production.
 
 A single Postgres instance hosts two databases: `boilerplatedb` for the app and `boilerplatetestdb` for the test suite — see [Automated Testing](automated-testing.md).
 

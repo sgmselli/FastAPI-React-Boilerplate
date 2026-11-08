@@ -20,7 +20,40 @@
         username: doctl
         password: "{{ lookup('env','DIGITALOCEAN_ACCESS_TOKEN') }}"
 
-    - name: Pull and start containers
+    - name: Find the running backend container
+      ansible.builtin.command:
+        cmd: docker compose ps --quiet backend
+        chdir: /root/
+      register: running_backend
+      changed_when: false
+
+    # Local tag only, so it costs no registry storage. Rolling back is in documentation/deployment/ci-cd.md
+    - name: Keep the running backend image as backend-previous
+      ansible.builtin.shell:
+        cmd: >-
+          docker image tag
+          "$(docker inspect --format '{% raw %}{{.Image}}{% endraw %}' {{ running_backend.stdout_lines[0] }})"
+          registry.digitalocean.com/fastapi-react-cr/app:backend-previous
+      when: running_backend.stdout_lines | length > 0
+
+    - name: Pull images
+      community.docker.docker_compose_v2_pull:
+        project_src: /root/
+
+    # Runs once, before any new code starts, so a failed migration stops the deploy
+    - name: Run database migrations
+      ansible.builtin.command:
+        cmd: docker compose run --rm backend alembic -c app/db/migrations/alembic.ini upgrade head
+        chdir: /root/
+      register: migrations
+      changed_when: "'Running upgrade' in migrations.stderr"
+
+    - name: Roll out the backend
+      ansible.builtin.command:
+        cmd: docker rollout --wait-after-healthy 10 backend
+        chdir: /root/
+
+    # The backend is already on the new image, so only the other services are recreated
+    - name: Start the remaining containers
       community.docker.docker_compose_v2:
         project_src: /root/
-        pull: always

@@ -142,4 +142,4 @@ npx playwright show-report          # HTML report from the last run
 
 **The stack must run with `APP_ENV=TEST`, as CI does.** Registration emails a verification code, and E2E has no inbox to read it from. Under `TestSettings` the backend sets `otp_fixed_code`, so every code is `000000`, and the `verifyEmail` helper in [`helpers.ts`](../frontend/tests/e2e/helpers/helpers.ts) enters that. Under `APP_ENV=DEVELOPMENT` codes are random, and every spec that registers a user will fail at the verify step. `TestSettings` also uses an in-memory Celery broker, so no emails are actually sent during a run.
 
-Running under `APP_ENV=TEST` also means E2E users land in `boilerplatetestdb` rather than your dev database. The backend container migrates it on startup. Restart the stack without `APP_ENV=TEST` to get your dev environment back.
+Running under `APP_ENV=TEST` also means E2E users land in `boilerplatetestdb` rather than your dev database. The `migrate` service applies migrations to it before the backend starts. Restart the stack without `APP_ENV=TEST` to get your dev environment back.
