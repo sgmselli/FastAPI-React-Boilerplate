@@ -33,7 +33,6 @@ services:
     logging: *default-logging
 
   backend:
-    container_name: backend
     image: registry.digitalocean.com/fastapi-react-cr/app:backend-latest
     env_file:
       - .env.backend
@@ -44,6 +43,14 @@ services:
         condition: service_healthy
     networks:
       - backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+      start_interval: 1s
+    stop_grace_period: 30s
     restart: unless-stopped
     logging: *default-logging
 

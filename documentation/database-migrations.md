@@ -105,7 +105,7 @@ See [`b7713f2addc3`](../backend/app/db/migrations/versions/) for the real exampl
 
 **Production.** [`deploy.yml`](../infrastructure/ansible/playbooks/deploy.yml) pulls the new images, runs `alembic upgrade head` once in a throwaway backend container, and only then starts the new containers. A migration failure stops the deploy before any new code runs — worth remembering when writing one that touches a large table, since the deploy waits for it to finish.
 
-**Every migration must still work with the code that's already running.** Deploys are moving to zero downtime, where the old backend keeps serving requests against the new schema until the new one is healthy. So a migration can add things, but not remove or rename anything the previous release still uses:
+**Every migration must still work with the code that's already running.** Deploys are zero-downtime, so the old backend keeps serving requests against the new schema until the new one is healthy. So a migration can add things, but not remove or rename anything the previous release still uses:
 
 - Add columns as nullable or with a server default, never `NOT NULL` without one.
 - To rename or remove a column or table, do it in two deploys: first ship code that no longer uses it, then remove it in a later migration.

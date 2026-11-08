@@ -58,3 +58,16 @@
       command: docker compose version
       register: compose_version
       changed_when: false
+
+    - name: Ensure Docker CLI plugins directory exists
+      file:
+        path: /root/.docker/cli-plugins
+        state: directory
+        mode: '0755'
+
+    - name: Install docker-rollout
+      get_url:
+        url: https://raw.githubusercontent.com/wowu/docker-rollout/v0.14/docker-rollout
+        dest: /root/.docker/cli-plugins/docker-rollout
+        checksum: sha256:cdeaba6ae9eee3b0b606286e585bbda6787283d801a6ad6d9b9d2bc347fda05b
+        mode: '0755'
