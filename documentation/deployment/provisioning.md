@@ -6,7 +6,7 @@ The playbooks live in [`infrastructure/ansible/`](../../infrastructure/ansible/)
 
 | Playbook | What it does |
 |---|---|
-| [`provision.yml`](../../infrastructure/ansible/playbooks/provision.yml) | Updates apt, installs Docker Engine, CLI, Buildx and the Compose plugin, enables the service |
+| [`provision.yml`](../../infrastructure/ansible/playbooks/provision.yml) | Updates apt, installs Docker Engine, CLI, Buildx, the Compose plugin and [docker-rollout](https://github.com/wowu/docker-rollout), enables the service |
 | [`environment_variables.yml`](../../infrastructure/ansible/playbooks/environment_variables.yml) | Writes `/root/.env.backend` and `/root/.env.db` from your variables |
 | [`deploy.yml`](../../infrastructure/ansible/playbooks/deploy.yml) | Pulls images and starts the stack — covered in [CI/CD Pipelines](ci-cd.md) |
 
@@ -101,6 +101,19 @@ ansible-playbook -i hosts.ini playbooks/provision.yml
 Takes a few minutes, mostly the `apt upgrade`. The last two tasks verify `docker --version` and `docker compose version`, so a clean run is proof Docker is working.
 
 Re-running is safe — every task is idempotent, and a second run should report `changed=0` apart from the apt cache.
+
+**On a droplet that's already serving traffic, re-running it isn't free.** The `apt upgrade` and `state: latest` on Docker can upgrade the Docker engine, which restarts every container. Do it in a quiet moment — or, if you only need docker-rollout (for example, on a droplet provisioned before it was added), install it by hand:
+
+```bash
+ssh root@<your-reserved-ip>
+mkdir -p /root/.docker/cli-plugins
+curl -fsSL https://raw.githubusercontent.com/wowu/docker-rollout/v0.14/docker-rollout \
+  -o /root/.docker/cli-plugins/docker-rollout
+chmod +x /root/.docker/cli-plugins/docker-rollout
+docker rollout --version
+```
+
+Deploys fail at the rollout step until it's installed.
 
 ## 5. Write the environment files
 

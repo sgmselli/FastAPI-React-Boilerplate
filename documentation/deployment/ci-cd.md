@@ -17,11 +17,11 @@ All three CI workflows follow the same shape: a `changes` job decides whether an
 
 Each also sets `cancel-in-progress: true`, so pushing a new commit kills the previous run rather than queueing behind it.
 
-**[`_test-backend.yml`](../../.github/workflows/_test-backend.yml)** spins up `postgres:18` and `redis:7-alpine` as service containers, points the app at them via `localhost`, runs Alembic migrations, then `pytest`. Because the services are real, both the unit and integration suites run here.
+**[`_test-backend.yml`](../../.github/workflows/_test-backend.yml)** spins up `postgres:18.6` and `redis:7.4.12-alpine` as service containers (the same versions production runs), points the app at them via `localhost`, runs Alembic migrations, then `pytest`. Because the services are real, both the unit and integration suites run here.
 
 **[`_test-frontend.yml`](../../.github/workflows/_test-frontend.yml)** runs lint, `tsc -b --noEmit`, the Vitest suite, and then a production `npm run build`. That last step matters — it's the same build [`_deploy-netlify.yml`](../../.github/workflows/_deploy-netlify.yml) ships, so a build break is caught on the PR rather than at deploy time.
 
-**[`_e2e.yml`](../../.github/workflows/_e2e.yml)** brings up the full local Compose stack, waits for the API and Postgres, migrates, then runs Playwright against it with `--workers=1`. On failure it uploads the Playwright report as an artifact, kept for 7 days — download it from the run summary rather than trying to read the log.
+**[`_e2e.yml`](../../.github/workflows/_e2e.yml)** brings up the full local Compose stack (whose `migrate` service applies migrations before the backend starts), waits for the API, then runs Playwright against it with `--workers=1`. On failure it uploads the Playwright report as an artifact, kept for 7 days — download it from the run summary rather than trying to read the log.
 
 Dependency installation is shared via two composite actions, [`setup-backend`](../../.github/actions/setup-backend/action.yml) (Python 3.12, pip cache) and [`setup-frontend`](../../.github/actions/setup-frontend/action.yml) (Node 24, npm cache).
 
@@ -32,7 +32,7 @@ Dependency installation is shared via two composite actions, [`setup-backend`](.
 1. **`changes`** — did `backend/**`, `compose/**`, or `frontend/**` change?
 2. **`test-backend`** / **`test-frontend`** — the same reusable workflows CI uses.
 3. **`build-push`** — builds the `backend` and `reverse-proxy` images for `linux/amd64` and pushes them to the DigitalOcean registry. Only runs if the backend changed *and* its tests passed.
-4. **`deploy-backend`** — runs [`deploy.yml`](../../infrastructure/ansible/playbooks/deploy.yml) over SSH: copies the production Compose file to `/root`, logs in to the registry, and pulls and restarts the stack.
+4. **`deploy-backend`** — runs [`deploy.yml`](../../infrastructure/ansible/playbooks/deploy.yml) over SSH: copies the production Compose file to `/root`, logs in to the registry, pulls the images, migrates the database, rolls out the backend with no downtime, then starts everything else. See [Zero-downtime backend deploys](#zero-downtime-backend-deploys).
 5. **`deploy-frontend`** — builds the frontend and ships `dist/` to Netlify with `netlify-cli deploy --prod`.
 
 A frontend-only change skips steps 3 and 4 entirely; a backend-only change skips step 5.
@@ -47,20 +47,47 @@ CD also accepts `workflow_dispatch` with two toggles, for when you need to redep
 
 These force the relevant path to run even though `paths-filter` found no changes — useful after editing `group_vars` and re-running the env playbook, or to recover from a failed deploy.
 
+## Zero-downtime backend deploys
+
+The backend is replaced with [docker-rollout](https://github.com/wowu/docker-rollout), installed by [`provision.yml`](../../infrastructure/ansible/playbooks/provision.yml), instead of being stopped and restarted:
+
+1. A second backend container starts on the new image, next to the old one.
+2. docker-rollout waits for its Compose `healthcheck` (`/api/v1/health`) to pass — up to 60 seconds.
+3. It waits 10 more seconds. Nginx re-resolves the `backend` service name every 5 seconds, so by now it's sending traffic to both containers.
+4. The old container is stopped. It gets 30 seconds (`stop_grace_period`) to finish requests it's already handling, and Nginx retries anything that hits it while it shuts down on the new one.
+
+**If the new container never becomes healthy, it's removed and the old one keeps serving.** The deploy job fails, so you'll see it in Actions, but users never reach the broken release.
+
+Migrations run before step 1, so the old container briefly serves against the new schema — which is why migrations must stay [backwards-compatible](../database-migrations.md#applying-migrations-elsewhere).
+
+**Only the backend gets this.** A deploy that changes the `reverse-proxy` image still recreates Nginx, dropping connections for about a second, and a changed worker is restarted — a task in progress at that moment is interrupted. Postgres and Redis use pinned versions, so they're only restarted when you change those versions.
+
+**A new container gets traffic as soon as it's listening, not once it's healthy.** Docker's DNS includes it straight away, and open-source Nginx has no active health checks. A release that crashes on startup or never listens is harmless — Nginx retries the old container — but one that starts and then returns errors will serve them until the healthcheck fails and docker-rollout removes it.
+
 ## Rolling back
 
-There isn't a clean rollback path today. [`_build-push.yml`](../../.github/workflows/_build-push.yml) tags every image `:backend-latest` and `:reverse-proxy-latest`, so each build **overwrites** the previous one and there's no older tag left in the registry to pull.
+[`_build-push.yml`](../../.github/workflows/_build-push.yml) tags every image `:backend-latest` and `:reverse-proxy-latest`, so each build **overwrites** the previous one in the registry. Keeping older tags there would use up the free registry's storage.
 
-To undo a bad backend deploy, revert the commit on `main` and let CD rebuild:
+Instead, each deploy keeps the image that was running before it as **`backend-previous` on the droplet** — a local tag, so it costs nothing. To switch back to it without downtime:
+
+```bash
+ssh root@<your-reserved-ip>
+cd /root
+docker image tag registry.digitalocean.com/fastapi-react-cr/app:backend-previous \
+  registry.digitalocean.com/fastapi-react-cr/app:backend-latest
+docker rollout --wait-after-healthy 10 backend
+```
+
+That's a stopgap — the next CD run pulls `latest` from the registry again. Follow it with a revert on `main` so the fix sticks:
 
 ```bash
 git revert <bad-sha>
 git push origin main
 ```
 
-The frontend is better off — Netlify keeps every deploy, so you can roll back instantly from its dashboard.
+**Rolling back the code doesn't roll back the database.** If the bad release included a migration, the previous image runs against the newer schema — fine as long as migrations are backwards-compatible, which is the rule anyway.
 
-If rollback speed matters, tag images with `${{ github.sha }}` in addition to `latest`. The plumbing for passing a specific tag through to the deploy step has been removed, so this means changing [`_build-push.yml`](../../.github/workflows/_build-push.yml), [`_deploy-droplet.yml`](../../.github/workflows/_deploy-droplet.yml) and [`docker-compose.production.yml`](../../compose/docker-compose.production.yml) together.
+The frontend is better off — Netlify keeps every deploy, so you can roll back instantly from its dashboard.
 
 ## Things worth knowing
 
@@ -72,9 +99,4 @@ If rollback speed matters, tag images with `${{ github.sha }}` in addition to `l
 
 **Path filtering and required status checks interact badly.** If you make `Backend tests` a required check in branch protection, a frontend-only PR will sit forever waiting for a job that was deliberately skipped. Either require only the `changes` jobs, or add a job that always reports success.
 
-**Deploys restart the stack, they don't migrate the database.** [`deploy.yml`](../../infrastructure/ansible/playbooks/deploy.yml) pulls images and calls `docker compose up` — there's no `alembic upgrade head` anywhere in CD, though both CI workflows run one. A deploy carrying a new migration needs it applied by hand:
-
-```bash
-ssh root@<your-reserved-ip>
-docker exec -it backend alembic -c app/db/migrations/alembic.ini upgrade head
-```
+**Deploys migrate the database before starting new code.** [`deploy.yml`](../../infrastructure/ansible/playbooks/deploy.yml) pulls images and runs `alembic upgrade head` once in a throwaway backend container before rolling anything out. A failed migration fails the deploy and leaves the old containers running. Migrations must stay compatible with the previous release — see [Database Migrations](../database-migrations.md#applying-migrations-elsewhere).
