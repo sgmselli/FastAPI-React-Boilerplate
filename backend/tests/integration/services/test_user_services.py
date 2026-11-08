@@ -55,7 +55,7 @@ class TestCreateUserWithPassword:
         user = await UserService(db_session).create_user_with_password(user_create)
 
         assert user.password != "Str0ng!Pass"
-        assert verify_password("Str0ng!Pass", user.password) is True
+        assert await verify_password("Str0ng!Pass", user.password) is True
 
     async def test_lowercases_email(self, db_session: AsyncSession):
         user_create = UserCreate(

@@ -10,7 +10,7 @@ from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from app.auth.password import hash_password
+from app.auth.dependencies import password_hash
 from app.core.config import settings
 from app.db.session import get_session
 from app.external_services.s3_client import get_s3_client
@@ -115,7 +115,7 @@ def s3_client(client: AsyncClient, monkeypatch):
     return mock
 
 
-# bcrypt hashing is ~250ms/call - hash once per session and reuse for
+# Password hashing is deliberately slow - hash once per session and reuse for
 # fixture users instead of re-hashing for every test that needs one.
 @pytest.fixture(scope="session")
 def shared_password() -> str:
@@ -124,7 +124,7 @@ def shared_password() -> str:
 
 @pytest.fixture(scope="session")
 def shared_password_hash(shared_password: str) -> str:
-    return hash_password(shared_password)
+    return password_hash.hash(shared_password)
 
 
 @pytest_asyncio.fixture

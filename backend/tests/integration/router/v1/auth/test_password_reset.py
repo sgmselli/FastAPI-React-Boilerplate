@@ -210,7 +210,7 @@ class TestConfirm:
 
         assert response.status_code == 200
         user = await UserService(db_session).get_user_by_email("reset@example.com")
-        assert verify_password(NEW_PASSWORD, user.password)
+        assert await verify_password(NEW_PASSWORD, user.password)
 
     async def test_marks_the_token_as_used(
         self, client: AsyncClient, db_session: AsyncSession, user_with_token
@@ -281,7 +281,7 @@ class TestConfirm:
 
         assert response.status_code == 400
         user = await UserService(db_session).get_user_by_email("reset@example.com")
-        assert verify_password(shared_password, user.password)
+        assert await verify_password(shared_password, user.password)
 
     async def test_mismatched_confirmation_returns_422(
         self, client: AsyncClient, user_with_token
