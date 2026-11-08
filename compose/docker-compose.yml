@@ -20,6 +20,17 @@ services:
     depends_on:
       - backend
 
+  # Applies migrations once, then exits - the backend waits for it to succeed
+  migrate:
+    build:
+      context: ../backend
+    command: alembic -c app/db/migrations/alembic.ini upgrade head
+    environment:
+      - APP_ENV
+    depends_on:
+      db:
+        condition: service_healthy
+
   backend:
     container_name: backend
     build:
@@ -29,8 +40,8 @@ services:
     environment:
       - APP_ENV
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   db:
     container_name: db

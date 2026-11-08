@@ -20,7 +20,18 @@
         username: doctl
         password: "{{ lookup('env','DIGITALOCEAN_ACCESS_TOKEN') }}"
 
-    - name: Pull and start containers
+    - name: Pull images
+      community.docker.docker_compose_v2_pull:
+        project_src: /root/
+
+    # Runs once, before any new code starts, so a failed migration stops the deploy
+    - name: Run database migrations
+      ansible.builtin.command:
+        cmd: docker compose run --rm backend alembic -c app/db/migrations/alembic.ini upgrade head
+        chdir: /root/
+      register: migrations
+      changed_when: "'Running upgrade' in migrations.stderr"
+
+    - name: Start containers
       community.docker.docker_compose_v2:
         project_src: /root/
-        pull: always

@@ -21,7 +21,7 @@ Each also sets `cancel-in-progress: true`, so pushing a new commit kills the pre
 
 **[`_test-frontend.yml`](../../.github/workflows/_test-frontend.yml)** runs lint, `tsc -b --noEmit`, the Vitest suite, and then a production `npm run build`. That last step matters — it's the same build [`_deploy-netlify.yml`](../../.github/workflows/_deploy-netlify.yml) ships, so a build break is caught on the PR rather than at deploy time.
 
-**[`_e2e.yml`](../../.github/workflows/_e2e.yml)** brings up the full local Compose stack, waits for the API and Postgres, migrates, then runs Playwright against it with `--workers=1`. On failure it uploads the Playwright report as an artifact, kept for 7 days — download it from the run summary rather than trying to read the log.
+**[`_e2e.yml`](../../.github/workflows/_e2e.yml)** brings up the full local Compose stack (whose `migrate` service applies migrations before the backend starts), waits for the API, then runs Playwright against it with `--workers=1`. On failure it uploads the Playwright report as an artifact, kept for 7 days — download it from the run summary rather than trying to read the log.
 
 Dependency installation is shared via two composite actions, [`setup-backend`](../../.github/actions/setup-backend/action.yml) (Python 3.12, pip cache) and [`setup-frontend`](../../.github/actions/setup-frontend/action.yml) (Node 24, npm cache).
 
@@ -72,9 +72,4 @@ If rollback speed matters, tag images with `${{ github.sha }}` in addition to `l
 
 **Path filtering and required status checks interact badly.** If you make `Backend tests` a required check in branch protection, a frontend-only PR will sit forever waiting for a job that was deliberately skipped. Either require only the `changes` jobs, or add a job that always reports success.
 
-**Deploys restart the stack, they don't migrate the database.** [`deploy.yml`](../../infrastructure/ansible/playbooks/deploy.yml) pulls images and calls `docker compose up` — there's no `alembic upgrade head` anywhere in CD, though both CI workflows run one. A deploy carrying a new migration needs it applied by hand:
-
-```bash
-ssh root@<your-reserved-ip>
-docker exec -it backend alembic -c app/db/migrations/alembic.ini upgrade head
-```
+**Deploys migrate the database before starting new code.** [`deploy.yml`](../../infrastructure/ansible/playbooks/deploy.yml) pulls images, runs `alembic upgrade head` once in a throwaway backend container, then calls `docker compose up`. A failed migration fails the deploy and leaves the old containers running. Migrations must stay compatible with the previous release — see [Database Migrations](../database-migrations.md#applying-migrations-elsewhere).
