@@ -25,18 +25,27 @@ describe('Navbar', () => {
   it('shows no auth-dependent content while the session is being resolved', () => {
     renderWithProviders(<Navbar />)
 
-    expect(screen.queryByRole('link', { name: 'Login' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Log in' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Open menu/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: testUser.display_name })).not.toBeInTheDocument()
   })
 
   describe('when signed out', () => {
-    it('renders Login and Register links, and a mobile menu trigger', async () => {
+    it('renders FAQ and About us links', async () => {
       signedOut()
       renderWithProviders(<Navbar />)
 
-      expect(await screen.findByRole('link', { name: 'Login' })).toHaveAttribute('href', '/login')
-      expect(screen.getByRole('link', { name: 'Register' })).toHaveAttribute('href', '/register')
+      await screen.findByRole('link', { name: 'Log in' })
+      expect(screen.getByRole('link', { name: 'FAQ' })).toHaveAttribute('href', '/faq')
+      expect(screen.getByRole('link', { name: 'About us' })).toHaveAttribute('href', '/about-us')
+    })
+
+    it('renders Log in and Sign up links, and a mobile menu trigger', async () => {
+      signedOut()
+      renderWithProviders(<Navbar />)
+
+      expect(await screen.findByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login')
+      expect(screen.getByRole('link', { name: 'Sign up' })).toHaveAttribute('href', '/register')
       expect(screen.getByRole('button', { name: /Open menu/i })).toBeInTheDocument()
     })
 
@@ -44,19 +53,21 @@ describe('Navbar', () => {
       signedOut()
       renderWithProviders(<Navbar />)
 
-      await screen.findByRole('link', { name: 'Login' })
+      await screen.findByRole('link', { name: 'Log in' })
       expect(screen.queryByRole('button', { name: testUser.display_name })).not.toBeInTheDocument()
     })
 
-    it('reveals a second set of Login/Register links via the mobile menu', async () => {
+    it('reveals a second set of page and auth links via the mobile menu', async () => {
       signedOut()
       renderWithProviders(<Navbar />)
 
-      await screen.findByRole('link', { name: 'Login' })
+      await screen.findByRole('link', { name: 'Log in' })
       await userEvent.click(screen.getByRole('button', { name: /Open menu/i }))
 
-      expect(screen.getAllByRole('link', { name: 'Login' })).toHaveLength(2)
-      expect(screen.getAllByRole('link', { name: 'Register' })).toHaveLength(2)
+      expect(screen.getAllByRole('link', { name: 'FAQ' })).toHaveLength(2)
+      expect(screen.getAllByRole('link', { name: 'About us' })).toHaveLength(2)
+      expect(screen.getAllByRole('link', { name: 'Log in' })).toHaveLength(2)
+      expect(screen.getAllByRole('link', { name: 'Sign up' })).toHaveLength(2)
     })
   })
 
@@ -74,12 +85,22 @@ describe('Navbar', () => {
       expect(await screen.findByRole('button', { name: /test@example\.com/ })).toBeInTheDocument()
     })
 
-    it('does not render Login/Register links or the mobile menu trigger', async () => {
+    it('does not render Log in/Sign up links', async () => {
       renderWithProviders(<Navbar />)
 
       await screen.findByRole('button', { name: new RegExp(testUser.display_name) })
-      expect(screen.queryByRole('link', { name: 'Login' })).not.toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: /Open menu/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Log in' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Sign up' })).not.toBeInTheDocument()
+    })
+
+    it('offers only the page links in the mobile menu', async () => {
+      renderWithProviders(<Navbar />)
+
+      await screen.findByRole('button', { name: new RegExp(testUser.display_name) })
+      await userEvent.click(screen.getByRole('button', { name: /Open menu/i }))
+
+      expect(screen.getAllByRole('link', { name: 'FAQ' })).toHaveLength(2)
+      expect(screen.queryByRole('link', { name: 'Log in' })).not.toBeInTheDocument()
     })
   })
 })

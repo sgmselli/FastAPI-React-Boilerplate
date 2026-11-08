@@ -80,14 +80,11 @@ export const Login: React.FC = () => {
 
     return (
         <section className="flex flex-col items-center justify-center mt-6">
-            <div className="w-full max-w-lg">
+            <div className="w-full max-w-sm">
                 <div className="card rounded-lg">
                     <div className="card-body space-y-6 py-0 md:pt-8 md:pb-12 px-0 text-color">
-                        <div className="flex flex-col items-start gap-1">
-                            <h1 className="text-4xl font-semibold primary-color">Sign in</h1>
-                            <p className="text-lg mt-2 text-gray-500">
-                                Sign in to your account!
-                            </p>
+                        <div className="flex flex-col items-center text-center gap-1">
+                            <h1 className="text-4xl font-semibold primary-color">Welcome back</h1>
                         </div>
 
                         {

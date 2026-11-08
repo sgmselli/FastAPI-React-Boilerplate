@@ -6,9 +6,10 @@ import { useLocation } from "react-router-dom";
 
 interface PageProps {
   children: ReactNode;
+  fullWidth?: boolean;
 }
 
-export const Page: React.FC<PageProps> = ({ children }) => {
+export const Page: React.FC<PageProps> = ({ children, fullWidth = false }) => {
 
   const { pathname } = useLocation();
 
@@ -23,7 +24,7 @@ export const Page: React.FC<PageProps> = ({ children }) => {
         <Navbar />
       </div>
 
-      <main className="flex-1 w-[70%] max-w-[1200px]">
+      <main className={fullWidth ? "flex-1 w-full" : "flex-1 w-[90%] sm:w-[70%] max-w-[1200px]"}>
         {children}
       </main>
 

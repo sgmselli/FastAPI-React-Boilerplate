@@ -14,22 +14,22 @@ export const Footer: React.FC = () => {
     const links = [
         ...authLinks,
         { label: "About Us", to: "/about-us" },
+        { label: "FAQ", to: "/faq" },
         { label: "Terms & conditions", to: "/terms-and-conditions" },
         { label: "Privacy policy", to: "/privacy-policy" },
     ];
 
     return (
-        <footer className="w-full flex justify-center border-t border-gray-200 surface-color-bg py-6">
-            <div className="w-[70%] max-w-[1200px] flex items-center justify-between gap-4 whitespace-nowrap overflow-x-auto text-sm">
-                <p className="text-gray-700">
-                    © 2026 FastAPI + React Boilerplate. All rights reserved.
+        <footer className="w-full flex justify-center py-4 surface-color-bg">
+            <div className="w-full px-4 sm:px-6 lg:px-10 flex flex-col-reverse lg:flex-row items-center justify-between gap-4 whitespace-nowrap">
+                <p className="px-4 text-gray-700">
+                    © FastAPI + React Boilerplate
                 </p>
-                <nav className="flex items-center gap-2 text-blue-600">
-                    {links.map((link, idx) => (
-                        <span key={link.to} className="flex items-center gap-2">
-                            <Link to={link.to} className="hover:underline">{link.label}</Link>
-                            {idx < links.length - 1 && <span className="text-gray-300">|</span>}
-                        </span>
+                <nav className="flex flex-col lg:flex-row items-center gap-1 lg:gap-2">
+                    {links.map((link) => (
+                        <Link key={link.to} to={link.to} className="px-4 py-2 rounded-full font-semibold text-color hover:bg-gray-100 transition-colors">
+                            {link.label}
+                        </Link>
                     ))}
                 </nav>
             </div>

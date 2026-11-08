@@ -32,7 +32,7 @@ describe('Login', () => {
   it('renders the sign in form', () => {
     renderWithProviders(<Login />, { route: '/login' })
 
-    expect(screen.getByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeInTheDocument()
     expect(screen.getByLabelText('Email address input')).toBeInTheDocument()
     expect(screen.getByLabelText('Password input')).toBeInTheDocument()
   })

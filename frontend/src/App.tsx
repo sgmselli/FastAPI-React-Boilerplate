@@ -20,6 +20,8 @@ import { ResetPassword } from "./pages/ResetPassword/ResetPassword";
 import { Settings } from "./pages/Settings/Settings";
 import { CompleteProfile } from "./pages/CompleteProfile/CompleteProfile";
 import { VerifyEmail } from "./pages/VerifyEmail/VerifyEmail";
+import { AboutUs } from "./pages/AboutUs/AboutUs";
+import { Faq } from "./pages/Faq/Faq";
 
 function App() {
 
@@ -28,7 +30,9 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <Routes>
-              <Route path="/" element={<Page children={<Landing />} />} />
+              <Route path="/" element={<Page fullWidth children={<Landing />} />} />
+              <Route path="/about-us" element={<Page children={<AboutUs />} />} />
+              <Route path="/faq" element={<Page children={<Faq />} />} />
               <Route path="/privacy-policy" element={<Page children={<PrivacyPolicy />} />} />
               <Route path="/terms-and-conditions" element={<Page children={<TermsAndConditions />} />} />
               <Route path="/*" element={<Page children={<NotFound />} />} />
