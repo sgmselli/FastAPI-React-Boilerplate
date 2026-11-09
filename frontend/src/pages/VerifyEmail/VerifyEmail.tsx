@@ -154,7 +154,7 @@ export const VerifyEmail: React.FC = () => {
                                                 {
                                                     loading ?
                                                         <div className="surface-color">
-                                                            <Loading size="sm" />
+                                                            <Loading size="sm" className="surface-color" />
                                                         </div>
                                                     :
                                                         <p>Verify email</p>

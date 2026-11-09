@@ -12,7 +12,7 @@ export const AuthCallback = () => {
     // After a Google redirect the session user is still being fetched
     if (loadingUser) return;
 
-    const returnTo = sessionStorage.getItem("returnTo") || "/account";
+    const returnTo = sessionStorage.getItem("returnTo") || "/getting-started";
     sessionStorage.removeItem("returnTo");
 
     // Offer the optional profile step first, then carry on to where they were going

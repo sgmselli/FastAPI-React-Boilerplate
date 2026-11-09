@@ -39,7 +39,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ items }) => {
             </button>
 
             {open && (
-                <div className="absolute right-0 mt-2 w-40 rounded-lg border border-gray-200 surface-color-bg shadow-md overflow-hidden z-50">
+                <div className="absolute left-0 mt-2 w-40 rounded-lg border border-gray-200 surface-color-bg shadow-md overflow-hidden z-50">
                     {items.map(({ label, to, icon: Icon }) => (
                         <Link
                             key={to}

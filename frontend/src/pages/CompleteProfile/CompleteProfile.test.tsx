@@ -51,7 +51,7 @@ async function renderCompleteProfile() {
 
 beforeEach(() => {
   mockNavigate.mockClear()
-  mockLocationState = { returnTo: '/account' }
+  mockLocationState = { returnTo: '/settings' }
   server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfileName(null))))
 })
 
@@ -85,7 +85,7 @@ describe('CompleteProfile', () => {
   })
 
   it('prefills the name Google suggested, without having saved it', async () => {
-    mockLocationState = { returnTo: '/account', suggestedName: 'Google User' }
+    mockLocationState = { returnTo: '/settings', suggestedName: 'Google User' }
 
     await renderCompleteProfile()
 
@@ -95,7 +95,7 @@ describe('CompleteProfile', () => {
   })
 
   it('saves the suggested name as-is', async () => {
-    mockLocationState = { returnTo: '/account', suggestedName: 'Google User' }
+    mockLocationState = { returnTo: '/settings', suggestedName: 'Google User' }
     let body: Record<string, unknown> | undefined
     server.use(
       http.patch(UPDATE_URL, async ({ request }) => {
@@ -107,7 +107,7 @@ describe('CompleteProfile', () => {
     await renderCompleteProfile()
     await userEvent.click(saveButton())
 
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/account', { replace: true }))
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/settings', { replace: true }))
     expect(body).toEqual({ name: 'Google User' })
   })
 
@@ -164,17 +164,17 @@ describe('CompleteProfile', () => {
     await renderCompleteProfile()
     await userEvent.click(screen.getByRole('button', { name: 'Skip profile button' }))
 
-    expect(mockNavigate).toHaveBeenCalledWith('/account', { replace: true })
+    expect(mockNavigate).toHaveBeenCalledWith('/settings', { replace: true })
     expect(called).toBe(false)
   })
 
-  it('defaults to /account when arriving without a returnTo', async () => {
+  it('defaults to /getting-started when arriving without a returnTo', async () => {
     mockLocationState = null
 
     await renderCompleteProfile()
     await userEvent.click(screen.getByRole('button', { name: 'Skip profile button' }))
 
-    expect(mockNavigate).toHaveBeenCalledWith('/account', { replace: true })
+    expect(mockNavigate).toHaveBeenCalledWith('/getting-started', { replace: true })
   })
 
   it('shows a validation error and stays on the page', async () => {

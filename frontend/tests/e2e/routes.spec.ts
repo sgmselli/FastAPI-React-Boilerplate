@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-import { completeProfile, expectOnAccountPage, registerUser, uniqueEmail, verifyEmail } from './helpers/helpers';
+import { completeProfile, expectOnGettingStartedPage, registerUser, uniqueEmail, verifyEmail } from './helpers/helpers';
 
 test('unauthenticated visit to a protected route redirects to login', async ({ page }) => {
-  await page.goto('/account');
+  await page.goto('/getting-started');
 
   await expect(page).toHaveURL(/\/login/);
 });
@@ -14,7 +14,7 @@ test('authenticated user visiting login is redirected away', async ({ page }) =>
   await registerUser(page, { email });
   await verifyEmail(page);
   await completeProfile(page, 'Guard User');
-  await expectOnAccountPage(page, 'Guard User');
+  await expectOnGettingStartedPage(page, 'Guard User');
 
   // UnauthorisedRoute sends signed-in users to /auth/callback, which forwards
   // on to their intended destination.

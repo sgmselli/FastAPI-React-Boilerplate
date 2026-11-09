@@ -34,7 +34,7 @@ TypeScript 5.9, [React](https://react.dev/) 19, built by [Vite](https://vite.dev
 | E2E tests | Playwright |
 | Linting | ESLint 9 |
 
-Source lives in `frontend/src/` — `pages/` for routed views, `components/` for shared UI, `contexts/` for React context (auth state), `api/` for the axios layer, `hooks/` and `utils/` for the rest.
+Source lives in `frontend/src/` — `pages/` for routed views, `layouts/` for the page shells routes render inside (`PublicLayout` with the navbar and footer, `AppLayout` with the signed-in sidebar), `components/` for shared UI, `contexts/` for React context (auth state), `api/` for the axios layer, `hooks/` and `utils/` for the rest.
 
 The API client uses a **relative** base URL (`/api/v1`), so the frontend never needs to know the backend's address — the reverse proxy routes it. Auth tokens are httpOnly cookies rather than localStorage, which is why every axios instance sets `withCredentials: true`.
 

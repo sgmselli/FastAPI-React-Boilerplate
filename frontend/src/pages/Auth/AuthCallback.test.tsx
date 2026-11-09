@@ -22,20 +22,20 @@ beforeEach(() => {
 
 describe('AuthCallback', () => {
   it('redirects to the stored returnTo path', async () => {
-    sessionStorage.setItem('returnTo', '/account')
+    sessionStorage.setItem('returnTo', '/settings')
 
     renderWithProviders(<AuthCallback />, { route: '/auth/callback' })
 
     await waitFor(() =>
-      expect(mockNavigate).toHaveBeenCalledWith('/account', { replace: true }),
+      expect(mockNavigate).toHaveBeenCalledWith('/settings', { replace: true }),
     )
   })
 
-  it('defaults to /account when nothing was stored', async () => {
+  it('defaults to /getting-started when nothing was stored', async () => {
     renderWithProviders(<AuthCallback />, { route: '/auth/callback' })
 
     await waitFor(() =>
-      expect(mockNavigate).toHaveBeenCalledWith('/account', { replace: true }),
+      expect(mockNavigate).toHaveBeenCalledWith('/getting-started', { replace: true }),
     )
   })
 
@@ -50,7 +50,7 @@ describe('AuthCallback', () => {
   })
 
   it('clears returnTo so a later login does not reuse it', async () => {
-    sessionStorage.setItem('returnTo', '/account')
+    sessionStorage.setItem('returnTo', '/settings')
 
     renderWithProviders(<AuthCallback />, { route: '/auth/callback' })
 
@@ -90,18 +90,18 @@ describe('AuthCallback', () => {
       await waitFor(() =>
         expect(mockNavigate).toHaveBeenCalledWith('/complete-profile', {
           replace: true,
-          state: { returnTo: '/account', suggestedName: "Jane O'Brien" },
+          state: { returnTo: '/getting-started', suggestedName: "Jane O'Brien" },
         }),
       )
     })
 
-    it('defaults the onward destination to /account', async () => {
+    it('defaults the onward destination to /getting-started', async () => {
       renderWithProviders(<AuthCallback />, { route: '/auth/callback' })
 
       await waitFor(() =>
         expect(mockNavigate).toHaveBeenCalledWith('/complete-profile', {
           replace: true,
-          state: { returnTo: '/account', suggestedName: null },
+          state: { returnTo: '/getting-started', suggestedName: null },
         }),
       )
     })

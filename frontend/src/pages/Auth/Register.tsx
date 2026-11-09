@@ -61,12 +61,11 @@ export const Register: React.FC = () => {
 
     return (
         <section className="flex flex-col items-center justify-center mt-6">
-            <div className="w-full max-w-lg">
+            <div className="w-full max-w-sm">
                 <div className="card rounded-lg">
                     <div className="card-body space-y-6 py-0 md:pt-8 md:pb-12 px-0 text-color">
-                        <div className="flex flex-col items-start gap-1">
+                        <div className="flex flex-col items-center text-center gap-1">
                             <h1 className="text-4xl font-semibold primary-color">Create an account</h1>
-                            <p className="text-lg mt-2 text-gray-500">Create your free account!</p>
                         </div>
 
                         {
@@ -172,7 +171,7 @@ export const Register: React.FC = () => {
                                     {
                                         loading ?
                                             <div>
-                                                <Loading size="sm" />
+                                                <Loading size="sm" className="surface-color" />
                                             </div>
                                             :
                                             <p>Create account</p>

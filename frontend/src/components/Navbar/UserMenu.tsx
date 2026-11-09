@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, User, Settings, LogOut } from "lucide-react";
+import { ChevronDown, Play, Settings, LogOut } from "lucide-react";
 
 import { Avatar } from "../Avatar/Avatar";
 
@@ -10,7 +10,7 @@ interface UserMenuProps {
 }
 
 const items = [
-    { label: "Account", to: "/account", icon: User },
+    { label: "Getting started", to: "/getting-started", icon: Play },
     { label: "Settings", to: "/settings", icon: Settings },
     { label: "Logout", to: "/logout", icon: LogOut },
 ];
@@ -36,8 +36,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ name, pictureUrl }) => {
                 onClick={() => setOpen((prev) => !prev)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-color cursor-pointer hover:bg-gray-200/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"
             >
-                <Avatar src={pictureUrl} className="h-7 w-7 mr-1.5" />
-                {name}
+                <Avatar src={pictureUrl} className="h-7 w-7 sm:mr-1.5" />
+                <span className="max-sm:sr-only whitespace-nowrap">{name}</span>
                 <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
             </button>
 

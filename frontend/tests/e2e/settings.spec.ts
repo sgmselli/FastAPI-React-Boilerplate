@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-import { completeProfile, expectOnAccountPage, loginUser, registerUser, uniqueEmail, verifyEmail } from './helpers/helpers';
+import { completeProfile, expectOnGettingStartedPage, loginUser, registerUser, uniqueEmail, verifyEmail } from './helpers/helpers';
 
 test('user can delete their account from settings', async ({ page }) => {
   const email = uniqueEmail('delete');
@@ -8,7 +8,7 @@ test('user can delete their account from settings', async ({ page }) => {
   await registerUser(page, { email });
   await verifyEmail(page);
   await completeProfile(page, 'Delete User');
-  await expectOnAccountPage(page, 'Delete User');
+  await expectOnGettingStartedPage(page, 'Delete User');
 
   await page.goto('/settings');
   await page.getByRole('button', { name: 'Delete account button' }).click();
@@ -25,7 +25,7 @@ test('user can delete their account from settings', async ({ page }) => {
   await expect(page.getByText('Your account has been deleted.')).toBeVisible();
 
   // Signed out - the cookies were cleared, so protected routes bounce
-  await page.goto('/account');
+  await page.goto('/getting-started');
   await expect(page).toHaveURL(/\/login/);
 
   // And the account is really gone, not just signed out
