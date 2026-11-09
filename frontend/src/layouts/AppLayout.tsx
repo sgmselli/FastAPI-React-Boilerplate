@@ -1,10 +1,10 @@
-import { type ReactNode, useEffect, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { LogOut, Menu, Play, Settings, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import { Logo } from "../Logo";
-import { CompleteProfileBanner } from "../CompleteProfileBanner/CompleteProfileBanner";
+import { Logo } from "../components/Logo";
+import { CompleteProfileBanner } from "../components/CompleteProfileBanner/CompleteProfileBanner";
 
 interface SidebarLink {
     label: string;
@@ -56,18 +56,9 @@ const SidebarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =
     </div>
 );
 
-interface SidebarLayoutProps {
-    children: ReactNode;
-}
+export const AppLayout: React.FC = () => {
 
-export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
-
-    const { pathname } = useLocation();
     const [menuOpen, setMenuOpen] = useState(false);
-
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, [pathname]);
 
     return (
         <div className="min-h-screen flex surface-color-bg">
@@ -108,7 +99,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
                 </header>
 
                 <main className="flex-1 w-full max-w-4xl px-6 lg:px-12 py-10">
-                    {children}
+                    <Outlet />
                 </main>
             </div>
         </div>
