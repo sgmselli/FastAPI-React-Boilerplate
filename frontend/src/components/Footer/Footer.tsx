@@ -8,7 +8,7 @@ export const Footer: React.FC = () => {
     const authLinks = loadingUser
         ? []
         : isAuthenticated()
-            ? [{ label: "Account", to: "/account" }]
+            ? [{ label: "Getting started", to: "/getting-started" }]
             : [{ label: "Login", to: "/login" }, { label: "Register", to: "/register" }];
 
     const links = [

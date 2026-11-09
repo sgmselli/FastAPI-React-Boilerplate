@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, User, Settings, LogOut } from "lucide-react";
+import { ChevronDown, Play, Settings, LogOut } from "lucide-react";
 
 import { Avatar } from "../Avatar/Avatar";
 
@@ -10,7 +10,7 @@ interface UserMenuProps {
 }
 
 const items = [
-    { label: "Account", to: "/account", icon: User },
+    { label: "Getting started", to: "/getting-started", icon: Play },
     { label: "Settings", to: "/settings", icon: Settings },
     { label: "Logout", to: "/logout", icon: LogOut },
 ];

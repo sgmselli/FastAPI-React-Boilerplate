@@ -18,7 +18,7 @@ export const CompleteProfile: React.FC = () => {
 
     // Set by AuthCallback: where to continue to afterwards, and a name from Google to prefill
     const state = location.state as { returnTo?: string; suggestedName?: string | null } | null;
-    const returnTo = state?.returnTo ?? "/account";
+    const returnTo = state?.returnTo ?? "/getting-started";
 
     // -----------------------------
     // Form State
@@ -106,7 +106,7 @@ export const CompleteProfile: React.FC = () => {
                                     {
                                         loading ?
                                             <div>
-                                                <Loading size="sm" />
+                                                <Loading size="sm" className="surface-color" />
                                             </div>
                                             :
                                             <p>Save</p>

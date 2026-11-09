@@ -171,7 +171,7 @@ export const Register: React.FC = () => {
                                     {
                                         loading ?
                                             <div>
-                                                <Loading size="sm" />
+                                                <Loading size="sm" className="surface-color" />
                                             </div>
                                             :
                                             <p>Create account</p>

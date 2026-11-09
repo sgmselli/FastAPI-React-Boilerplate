@@ -320,7 +320,7 @@ const ResetPasswordForm: React.FC<{ token: string; onSuccess: () => void }> = ({
                         {
                             loading ?
                                 <div className="surface-color">
-                                    <Loading size="sm" />
+                                    <Loading size="sm" className="surface-color" />
                                 </div>
                             :
                                 <p>Reset password</p>

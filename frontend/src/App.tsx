@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import { Page } from "./components/Page";
 import Landing from "./pages/Landing/Landing";
-import Account from "./pages/Account/Account";
 import { NotFound } from "./pages/NotFound/NotFound";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy/PrivacyPolicy";
 import { TermsAndConditions } from "./pages/TermsAndConditions/TermsAndConditions";
@@ -22,6 +21,8 @@ import { CompleteProfile } from "./pages/CompleteProfile/CompleteProfile";
 import { VerifyEmail } from "./pages/VerifyEmail/VerifyEmail";
 import { AboutUs } from "./pages/AboutUs/AboutUs";
 import { Faq } from "./pages/Faq/Faq";
+import { GettingStarted } from "./pages/GettingStarted/GettingStarted";
+import { SidebarLayout } from "./components/SidebarLayout/SidebarLayout";
 
 function App() {
 
@@ -44,10 +45,10 @@ function App() {
 
               {/* Must be authenticated routes */}
               <Route element={<AuthorizedRoute />}>
-                <Route path="/account" element={<Page children={<Account />} />} />
-                <Route path="/settings" element={<Page children={<Settings />} />} />
+                <Route path="/getting-started" element={<SidebarLayout children={<GettingStarted />} />} />
+                <Route path="/settings" element={<SidebarLayout children={<Settings />} />} />
                 <Route path="/complete-profile" element={<Page children={<CompleteProfile />} />} />
-                <Route path="/logout" element={<Page children={<Logout />} />} />
+                <Route path="/logout" element={<Logout />} />
               </Route>
 
               {/* Must be unauthenticated routes */}

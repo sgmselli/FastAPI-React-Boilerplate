@@ -69,7 +69,7 @@ Both `GOOGLE_REDIRECT_URL` and `FRONTEND_URL` matter:
 
 ## 5. Test it
 
-With the stack running, go to [http://localhost:3000/login](http://localhost:3000/login) and click **Sign in with Google**. On success you land on `/account`, signed in.
+With the stack running, go to [http://localhost:3000/login](http://localhost:3000/login) and click **Sign in with Google**. On success you land on `/getting-started`, signed in.
 
 ## Troubleshooting
 

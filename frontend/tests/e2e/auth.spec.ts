@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-import { completeProfile, expectOnAccountPage, loginUser, registerUser, skipProfile, TEST_PASSWORD, uniqueEmail, verifyEmail } from './helpers/helpers';
+import { completeProfile, expectOnGettingStartedPage, loginUser, registerUser, skipProfile, TEST_PASSWORD, uniqueEmail, verifyEmail } from './helpers/helpers';
 
 /**
  * Runs against the real stack (reverse proxy -> backend -> Postgres) started
@@ -17,7 +17,7 @@ test('user can register and lands on their account page', async ({ page }) => {
   await verifyEmail(page);
   await completeProfile(page, 'Register User');
 
-  await expectOnAccountPage(page, 'Register User');
+  await expectOnGettingStartedPage(page, 'Register User');
 });
 
 test('a new account must be verified before it can sign in', async ({ page }) => {
@@ -33,7 +33,7 @@ test('a new account must be verified before it can sign in', async ({ page }) =>
 
   await verifyEmail(page);
   await completeProfile(page, 'Verified User');
-  await expectOnAccountPage(page, 'Verified User');
+  await expectOnGettingStartedPage(page, 'Verified User');
 });
 
 test('a wrong verification code shows an error and does not sign in', async ({ page }) => {
@@ -53,7 +53,7 @@ test('skipping the profile step falls back to the email, and is offered again on
   await verifyEmail(page);
   await skipProfile(page);
 
-  await expectOnAccountPage(page, email);
+  await expectOnGettingStartedPage(page, email);
   await expect(page.getByText('Please complete your profile.')).toBeVisible();
 
   await page.goto('/logout');
@@ -63,7 +63,7 @@ test('skipping the profile step falls back to the email, and is offered again on
 
   // Still no name, so the optional step comes round again before the account page
   await completeProfile(page, 'Skip User');
-  await expectOnAccountPage(page, 'Skip User');
+  await expectOnGettingStartedPage(page, 'Skip User');
   await expect(page.getByText('Please complete your profile.')).toBeHidden();
 });
 
@@ -73,7 +73,7 @@ test('registered user can sign in', async ({ page }) => {
   await registerUser(page, { email });
   await verifyEmail(page);
   await completeProfile(page, 'Login User');
-  await expectOnAccountPage(page, 'Login User');
+  await expectOnGettingStartedPage(page, 'Login User');
 
   // Full round trip: sign out, then back in with the same credentials.
   await page.goto('/logout');
@@ -81,7 +81,7 @@ test('registered user can sign in', async ({ page }) => {
 
   await loginUser(page, { email });
 
-  await expectOnAccountPage(page, 'Login User');
+  await expectOnGettingStartedPage(page, 'Login User');
 });
 
 test('signing in with the wrong password shows an error and stays on the login page', async ({ page }) => {
@@ -114,7 +114,7 @@ test('registering with an already-used email is rejected', async ({ page }) => {
   await registerUser(page, { email });
   await verifyEmail(page);
   await completeProfile(page, 'First User');
-  await expectOnAccountPage(page, 'First User');
+  await expectOnGettingStartedPage(page, 'First User');
 
   await page.goto('/logout');
   await page.waitForURL('**/login');
@@ -130,13 +130,13 @@ test('logging out clears the session', async ({ page }) => {
   await registerUser(page, { email });
   await verifyEmail(page);
   await completeProfile(page, 'Logout User');
-  await expectOnAccountPage(page, 'Logout User');
+  await expectOnGettingStartedPage(page, 'Logout User');
 
   await page.goto('/logout');
   await page.waitForURL('**/login');
 
   // The protected route must now bounce, proving the cookies really were cleared
   // server-side rather than just the client forgetting.
-  await page.goto('/account');
+  await page.goto('/getting-started');
   await expect(page).toHaveURL(/\/login/);
 });

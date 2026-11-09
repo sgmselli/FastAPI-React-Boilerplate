@@ -70,7 +70,7 @@ export async function loginUser(
   await page.getByRole('button', { name: /Sign in button/i }).click();
 }
 
-export async function expectOnAccountPage(page: Page, name: string) {
-  await page.waitForURL('**/account');
-  await expect(page.getByRole('heading', { level: 1, name: `Welcome, ${name}` })).toBeVisible();
+export async function expectOnGettingStartedPage(page: Page, name: string) {
+  await page.waitForURL('**/getting-started');
+  await expect(page.getByText(`Hey ${name}, welcome`)).toBeVisible();
 }
