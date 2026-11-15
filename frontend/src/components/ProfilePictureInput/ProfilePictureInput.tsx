@@ -122,7 +122,6 @@ export const ProfilePictureInput: React.FC<ProfilePictureInputProps> = ({ onUplo
                             )
                         }
                     </div>
-                    <p className="text-[13px] text-gray-500">JPEG, PNG, WebP, HEIC or AVIF, up to 5MB.</p>
                 </div>
 
                 <input
