@@ -56,11 +56,11 @@ Everything runs through Docker Compose in development. `compose/docker-compose.y
 
 | Service | Purpose |
 |---|---|
-| `reverse_proxy` | nginx on port 80 — the entry point. Routes `/api/*` to the backend, everything else to the frontend |
-| `frontend` | React app built to static files, served by nginx |
+| `reverse_proxy` | nginx on port 80. Routes `/api/*` to the backend |
+| `frontend` | Vite dev server on port 3000 — the app's entry point |
 | `backend` | FastAPI via Uvicorn |
 | `worker` | Celery worker (same image as `backend`) |
 | `db` | PostgreSQL 18 |
 | `redis` | Redis 7 |
 
-The reverse proxy matters more than it looks: because the frontend calls `/api/v1` relatively, **port 80 is the only working entry point**. Hitting the frontend container's port directly serves the page but breaks every API call.
+Open the app at `http://localhost:3000`. The frontend calls `/api/v1` relatively, and the Vite dev server proxies `/api` to the reverse proxy on port 80, which passes it to the backend.

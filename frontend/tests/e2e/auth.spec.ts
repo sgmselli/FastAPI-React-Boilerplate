@@ -137,6 +137,6 @@ test('logging out clears the session', async ({ page }) => {
 
   // The protected route must now bounce, proving the cookies really were cleared
   // server-side rather than just the client forgetting.
-  await page.goto('/getting-started');
+  await page.goto('/docs/getting-started');
   await expect(page).toHaveURL(/\/login/);
 });

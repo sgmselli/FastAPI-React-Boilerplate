@@ -168,13 +168,13 @@ describe('CompleteProfile', () => {
     expect(called).toBe(false)
   })
 
-  it('defaults to /getting-started when arriving without a returnTo', async () => {
+  it('defaults to /docs/getting-started when arriving without a returnTo', async () => {
     mockLocationState = null
 
     await renderCompleteProfile()
     await userEvent.click(screen.getByRole('button', { name: 'Skip profile button' }))
 
-    expect(mockNavigate).toHaveBeenCalledWith('/getting-started', { replace: true })
+    expect(mockNavigate).toHaveBeenCalledWith('/docs/getting-started', { replace: true })
   })
 
   it('shows a validation error and stays on the page', async () => {

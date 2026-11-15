@@ -71,6 +71,6 @@ export async function loginUser(
 }
 
 export async function expectOnGettingStartedPage(page: Page, name: string) {
-  await page.waitForURL('**/getting-started');
+  await page.waitForURL('**/docs/getting-started');
   await expect(page.getByText(`Hey ${name}, welcome`)).toBeVisible();
 }

@@ -1,20 +1,17 @@
 import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { LogOut, Menu, Play, Settings, X } from "lucide-react";
+import { LogOut, Menu, Settings, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { Logo } from "../components/Logo";
 import { CompleteProfileBanner } from "../components/CompleteProfileBanner/CompleteProfileBanner";
+import { docsPath, docsSteps, firstDocsPath } from "../pages/Docs/steps";
 
 interface SidebarLink {
     label: string;
     to: string;
     icon: LucideIcon;
 }
-
-const docsLinks: SidebarLink[] = [
-    { label: "Getting started", to: "/getting-started", icon: Play },
-];
 
 const footerLinks: SidebarLink[] = [
     { label: "Settings", to: "/settings", icon: Settings },
@@ -37,9 +34,31 @@ const SidebarLinks: React.FC<{ links: SidebarLink[]; onNavigate?: () => void }> 
     </>
 );
 
+const StepLinks: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) => (
+    <>
+        {docsSteps.map(({ slug, title }, idx) => (
+            <NavLink key={slug} to={docsPath(slug)} onClick={onNavigate} className={linkClass}>
+                {({ isActive }) => (
+                    <>
+                        <span
+                            aria-hidden="true"
+                            className={`h-6 w-6 flex-shrink-0 flex items-center justify-center rounded-full text-xs font-semibold ${
+                                isActive ? "fastapi-color-bg text-white" : "bg-gray-200 text-gray-600"
+                            }`}
+                        >
+                            {idx + 1}
+                        </span>
+                        {title}
+                    </>
+                )}
+            </NavLink>
+        ))}
+    </>
+);
+
 const SidebarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) => (
     <div className="h-full flex flex-col">
-        <Link to="/getting-started" onClick={onNavigate} className="px-3 py-1">
+        <Link to={firstDocsPath} onClick={onNavigate} className="px-3 py-1">
             <div className="h-8 w-8">
                 <Logo />
             </div>
@@ -47,7 +66,7 @@ const SidebarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =
 
         <nav aria-label="Documentation" className="mt-8 flex-1 flex flex-col gap-1 overflow-y-auto">
             <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Documentation</p>
-            <SidebarLinks links={docsLinks} onNavigate={onNavigate} />
+            <StepLinks onNavigate={onNavigate} />
         </nav>
 
         <div className="pt-4 border-t border-gray-200 flex flex-col gap-1">
@@ -93,7 +112,7 @@ export const AppLayout: React.FC = () => {
                     >
                         <Menu className="h-5 w-5" />
                     </button>
-                    <Link to="/getting-started" className="h-8 w-8">
+                    <Link to={firstDocsPath} className="h-8 w-8">
                         <Logo />
                     </Link>
                 </header>

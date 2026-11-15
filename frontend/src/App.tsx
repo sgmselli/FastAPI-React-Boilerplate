@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Navigate, Routes, Route } from "react-router-dom";
 
 import { PublicLayout } from "./layouts/PublicLayout";
 import { AppLayout } from "./layouts/AppLayout";
@@ -23,7 +23,8 @@ import { CompleteProfile } from "./pages/CompleteProfile/CompleteProfile";
 import { VerifyEmail } from "./pages/VerifyEmail/VerifyEmail";
 import { AboutUs } from "./pages/AboutUs/AboutUs";
 import { Faq } from "./pages/Faq/Faq";
-import { GettingStarted } from "./pages/GettingStarted/GettingStarted";
+import { DocsStep } from "./pages/Docs/DocsStep";
+import { firstDocsPath } from "./pages/Docs/steps";
 
 function App() {
 
@@ -53,7 +54,8 @@ function App() {
               {/* Must be authenticated routes */}
               <Route element={<AuthorizedRoute />}>
                 <Route element={<AppLayout />}>
-                  <Route path="/getting-started" element={<GettingStarted />} />
+                  <Route path="/docs" element={<Navigate to={firstDocsPath} replace />} />
+                  <Route path="/docs/:slug" element={<DocsStep />} />
                   <Route path="/settings" element={<Settings />} />
                 </Route>
 

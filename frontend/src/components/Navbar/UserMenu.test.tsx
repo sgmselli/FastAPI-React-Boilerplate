@@ -30,7 +30,7 @@ describe('UserMenu', () => {
   it('is closed by default', () => {
     renderWithProviders(<UserMenu name="Test User" pictureUrl={null} />, { withAuth: false })
 
-    expect(screen.queryByRole('link', { name: /Getting started/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Documentation/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /Settings/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /Logout/ })).not.toBeInTheDocument()
   })
@@ -40,7 +40,7 @@ describe('UserMenu', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /Test User/ }))
 
-    expect(screen.getByRole('link', { name: /Getting started/ })).toHaveAttribute('href', '/getting-started')
+    expect(screen.getByRole('link', { name: /Documentation/ })).toHaveAttribute('href', '/docs')
     expect(screen.getByRole('link', { name: /Settings/ })).toHaveAttribute('href', '/settings')
     expect(screen.getByRole('link', { name: /Logout/ })).toHaveAttribute('href', '/logout')
   })
@@ -50,10 +50,10 @@ describe('UserMenu', () => {
     const trigger = screen.getByRole('button', { name: /Test User/ })
 
     await userEvent.click(trigger)
-    expect(screen.getByRole('link', { name: /Getting started/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Documentation/ })).toBeInTheDocument()
 
     await userEvent.click(trigger)
-    expect(screen.queryByRole('link', { name: /Getting started/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Documentation/ })).not.toBeInTheDocument()
   })
 
   it('closes when clicking outside the menu', async () => {
@@ -66,19 +66,19 @@ describe('UserMenu', () => {
     )
 
     await userEvent.click(screen.getByRole('button', { name: /Test User/ }))
-    expect(screen.getByRole('link', { name: /Getting started/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Documentation/ })).toBeInTheDocument()
 
     // The component listens on document mousedown and checks containment.
     await userEvent.click(screen.getByRole('button', { name: 'Elsewhere' }))
 
-    expect(screen.queryByRole('link', { name: /Getting started/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Documentation/ })).not.toBeInTheDocument()
   })
 
   it('closes when a menu item is selected', async () => {
     renderWithProviders(<UserMenu name="Test User" pictureUrl={null} />, { withAuth: false })
 
     await userEvent.click(screen.getByRole('button', { name: /Test User/ }))
-    await userEvent.click(screen.getByRole('link', { name: /Getting started/ }))
+    await userEvent.click(screen.getByRole('link', { name: /Documentation/ }))
 
     expect(screen.queryByRole('link', { name: /Logout/ })).not.toBeInTheDocument()
   })
