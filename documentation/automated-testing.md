@@ -129,7 +129,7 @@ npx playwright install chromium   # one-time, downloads the browser
 npm run test:e2e
 ```
 
-`playwright.config.ts` targets `http://localhost:80`, the reverse proxy, since that's the only entry point where `/api/*` routes correctly (see [Local Setup](local-setup.md)). Only Chromium is enabled; other browsers are stubbed out but commented off. `workers: 1` and `retries: 0` — specs run serially and a failure is a failure, not something retried away.
+`playwright.config.ts` targets `http://localhost:3000`, the Vite dev server, which proxies `/api/*` through the reverse proxy to the backend (see [Local Setup](local-setup.md)). Only Chromium is enabled; other browsers are stubbed out but commented off. `workers: 1` and `retries: 0` — specs run serially and a failure is a failure, not something retried away.
 
 Useful while debugging:
 

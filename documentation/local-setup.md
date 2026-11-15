@@ -36,10 +36,8 @@ docker compose -f compose/docker-compose.yml up --build
 
 No `psql` step needed here — the official `postgres` image auto-creates the `boilerplatedb` database and `dbadmin` role itself from the `POSTGRES_DB`/`POSTGRES_USER` values already set in `docker-compose.yml`'s `db` service.
 
-- **App: [http://localhost](http://localhost)** (port 80, the reverse proxy) — use this one. It routes `/api/*` to the backend and everything else to the frontend.
+- **App: [http://localhost:3000](http://localhost:3000)** — the Vite dev server. It proxies `/api/*` to the reverse proxy on port 80, which routes it to the backend.
 - Backend directly: [http://localhost:8000](http://localhost:8000) (docs at `/docs`)
-
-> The frontend container's own port, `3000`, serves the static files fine on its own but **isn't a working entry point** — the app calls its API via a relative `/api/v1` path, and only the reverse proxy on port 80 knows how to route that to the backend. Hitting `:3000` directly means every API call silently falls through to `index.html`.
 
 ---
 

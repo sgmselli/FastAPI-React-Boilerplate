@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 import { completeProfile, expectOnGettingStartedPage, registerUser, uniqueEmail, verifyEmail } from './helpers/helpers';
 
 test('unauthenticated visit to a protected route redirects to login', async ({ page }) => {
-  await page.goto('/getting-started');
+  await page.goto('/docs/getting-started');
 
   await expect(page).toHaveURL(/\/login/);
 });

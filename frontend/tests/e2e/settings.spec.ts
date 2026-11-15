@@ -25,7 +25,7 @@ test('user can delete their account from settings', async ({ page }) => {
   await expect(page.getByText('Your account has been deleted.')).toBeVisible();
 
   // Signed out - the cookies were cleared, so protected routes bounce
-  await page.goto('/getting-started');
+  await page.goto('/docs/getting-started');
   await expect(page).toHaveURL(/\/login/);
 
   // And the account is really gone, not just signed out

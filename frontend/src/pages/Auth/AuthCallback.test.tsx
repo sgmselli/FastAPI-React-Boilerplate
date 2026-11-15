@@ -31,11 +31,11 @@ describe('AuthCallback', () => {
     )
   })
 
-  it('defaults to /getting-started when nothing was stored', async () => {
+  it('defaults to /docs/getting-started when nothing was stored', async () => {
     renderWithProviders(<AuthCallback />, { route: '/auth/callback' })
 
     await waitFor(() =>
-      expect(mockNavigate).toHaveBeenCalledWith('/getting-started', { replace: true }),
+      expect(mockNavigate).toHaveBeenCalledWith('/docs/getting-started', { replace: true }),
     )
   })
 
@@ -90,18 +90,18 @@ describe('AuthCallback', () => {
       await waitFor(() =>
         expect(mockNavigate).toHaveBeenCalledWith('/complete-profile', {
           replace: true,
-          state: { returnTo: '/getting-started', suggestedName: "Jane O'Brien" },
+          state: { returnTo: '/docs/getting-started', suggestedName: "Jane O'Brien" },
         }),
       )
     })
 
-    it('defaults the onward destination to /getting-started', async () => {
+    it('defaults the onward destination to /docs/getting-started', async () => {
       renderWithProviders(<AuthCallback />, { route: '/auth/callback' })
 
       await waitFor(() =>
         expect(mockNavigate).toHaveBeenCalledWith('/complete-profile', {
           replace: true,
-          state: { returnTo: '/getting-started', suggestedName: null },
+          state: { returnTo: '/docs/getting-started', suggestedName: null },
         }),
       )
     })

@@ -6,7 +6,7 @@ import { Route, Routes } from 'react-router-dom'
 import { renderWithProviders, screen, within } from '../test/renderWithProviders'
 import { AppLayout } from './AppLayout'
 
-function renderLayout(route = '/getting-started') {
+function renderLayout(route = '/docs/getting-started') {
   renderWithProviders(
     <Routes>
       <Route element={<AppLayout />}>
@@ -27,13 +27,19 @@ describe('AppLayout', () => {
   it('links to the documentation, settings and logout', () => {
     renderLayout('/')
 
-    expect(screen.getByRole('link', { name: 'Getting started' })).toHaveAttribute('href', '/getting-started')
+    expect(screen.getByRole('link', { name: 'Getting started' })).toHaveAttribute('href', '/docs/getting-started')
     expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings')
     expect(screen.getByRole('link', { name: 'Logout' })).toHaveAttribute('href', '/logout')
   })
 
+  it('numbers the documentation steps in order', () => {
+    renderLayout('/')
+
+    expect(screen.getByRole('link', { name: 'Getting started' })).toHaveTextContent('1Getting started')
+  })
+
   it('marks the current page as active', () => {
-    renderLayout('/getting-started')
+    renderLayout('/docs/getting-started')
 
     expect(screen.getByRole('link', { name: 'Getting started' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', { name: 'Settings' })).not.toHaveAttribute('aria-current')
