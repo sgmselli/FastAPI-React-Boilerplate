@@ -1,5 +1,5 @@
 import logging
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from starlette.responses import RedirectResponse
@@ -33,7 +33,8 @@ async def auth_google_callback(
 
         google_id = google_user["sub"]
         email = google_user.get("email")
-        name = google_user.get("name")
+        google_name = {"first_name": google_user.get("given_name"), "last_name": google_user.get("family_name")}
+        suggested_name = {key: value for key, value in google_name.items() if value}
 
         try:
             user = await user_service.get_user_by_google_id(google_id)
@@ -62,8 +63,8 @@ async def auth_google_callback(
         callback_url = f"{settings.frontend_url}/auth/callback"
         # The Google name is only a suggestion for the complete profile page - the
         # user decides whether to save it. A fragment keeps it out of access logs.
-        if name and not user.profile.name:
-            callback_url += f"#name={quote(name)}"
+        if suggested_name and not user.profile.is_profile_completed:
+            callback_url += f"#{urlencode(suggested_name, quote_via=quote)}"
 
         redirect = RedirectResponse(
             url=callback_url,

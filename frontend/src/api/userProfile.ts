@@ -6,7 +6,8 @@ export async function updateCurrentUserProfile(
   profile: UserProfileUpdateRequest
 ): Promise<UserResponse> {
   const response = await apiAuth.patch("/profile/current", {
-    name: profile.name
+    first_name: profile.first_name,
+    last_name: profile.last_name
   });
   return response.data;
 }

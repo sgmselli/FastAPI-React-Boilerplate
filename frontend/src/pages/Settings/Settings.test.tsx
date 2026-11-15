@@ -20,7 +20,7 @@ function SessionUserName() {
   return <span data-testid="session-user-name">{user ? user.display_name : 'none'}</span>
 }
 
-async function renderSettings(expectedName: string = testUser.display_name) {
+async function renderSettings(expectedFirstName: string = testUser.profile.first_name ?? '') {
   // Rendered behind AuthorizedRoute as in App.tsx - the profile form seeds its
   // input from the user once, so it relies on the guard holding it back until
   // the session has loaded.
@@ -37,13 +37,17 @@ async function renderSettings(expectedName: string = testUser.display_name) {
     </>,
     { route: '/settings' },
   )
-  await waitFor(() => expect(screen.getByLabelText('Name input')).toHaveValue(expectedName))
+  await waitFor(() => expect(firstNameInput()).toHaveValue(expectedFirstName))
 }
 
-async function replaceName(name: string) {
-  const input = screen.getByLabelText('Name input')
-  await userEvent.clear(input)
-  if (name) await userEvent.type(input, name)
+const firstNameInput = () => screen.getByLabelText('First name input')
+const lastNameInput = () => screen.getByLabelText('Last name input')
+
+async function replaceName(firstName: string, lastName: string) {
+  for (const [input, value] of [[firstNameInput(), firstName], [lastNameInput(), lastName]] as const) {
+    await userEvent.clear(input)
+    if (value) await userEvent.type(input, value)
+  }
 }
 
 const saveButton = () => screen.getByRole('button', { name: 'Save profile button' })
@@ -86,19 +90,21 @@ describe('Profile settings', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Your profile picture has been removed.')
   })
 
-  it('prefills the name from the current user', async () => {
+  it('prefills the first and last name from the current user', async () => {
     await renderSettings()
 
-    expect(screen.getByLabelText('Name input')).toHaveValue(testUser.display_name)
+    expect(firstNameInput()).toHaveValue('Test')
+    expect(lastNameInput()).toHaveValue('User')
   })
 
   it('leaves the name empty rather than showing the email when no name is set', async () => {
     // display_name falls back to the email, but the input edits the profile name itself.
-    server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfileName(null))))
+    server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfileName(null, null))))
 
     await renderSettings('')
 
-    expect(screen.getByLabelText('Name input')).toHaveValue('')
+    expect(firstNameInput()).toHaveValue('')
+    expect(lastNameInput()).toHaveValue('')
     expect(saveButton()).toBeDisabled()
   })
 
@@ -115,16 +121,24 @@ describe('Profile settings', () => {
     server.use(
       http.patch(UPDATE_URL, async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json(withProfileName('New Name'))
+        return HttpResponse.json(withProfileName('New', 'Name'))
       }),
     )
 
     await renderSettings()
-    await replaceName('New Name')
+    await replaceName('New', 'Name')
     await userEvent.click(saveButton())
 
     await screen.findByRole('status')
     expect(body).not.toHaveProperty('email')
+  })
+
+  it('enables Save when only the last name changes', async () => {
+    await renderSettings()
+
+    await userEvent.type(lastNameInput(), 's')
+
+    expect(saveButton()).toBeEnabled()
   })
 
   it('disables Save until the name changes', async () => {
@@ -133,11 +147,11 @@ describe('Profile settings', () => {
     expect(saveButton()).toBeDisabled()
     expect(saveButton()).toHaveClass('opacity-50')
 
-    await replaceName('New Name')
+    await replaceName('New', 'Name')
     expect(saveButton()).toBeEnabled()
     expect(saveButton()).not.toHaveClass('opacity-50')
 
-    await replaceName(testUser.display_name)
+    await replaceName('Test', 'User')
     expect(saveButton()).toBeDisabled()
     expect(saveButton()).toHaveClass('opacity-50')
   })
@@ -147,17 +161,18 @@ describe('Profile settings', () => {
     server.use(
       http.patch(UPDATE_URL, async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json(withProfileName('New Name'))
+        return HttpResponse.json(withProfileName('New', 'Name'))
       }),
     )
 
     await renderSettings()
-    await replaceName('New Name')
+    await replaceName('New', 'Name')
     await userEvent.click(saveButton())
 
     expect(await screen.findByRole('status')).toHaveTextContent('Your profile has been updated.')
-    expect(body).toEqual({ name: 'New Name' })
-    expect(screen.getByLabelText('Name input')).toHaveValue('New Name')
+    expect(body).toEqual({ first_name: 'New', last_name: 'Name' })
+    expect(firstNameInput()).toHaveValue('New')
+    expect(lastNameInput()).toHaveValue('Name')
     expect(saveButton()).toBeDisabled()
   })
 
@@ -165,7 +180,7 @@ describe('Profile settings', () => {
     await renderSettings()
     expect(screen.getByTestId('session-user-name')).toHaveTextContent(testUser.display_name)
 
-    await replaceName('New Name')
+    await replaceName('New', 'Name')
     await userEvent.click(saveButton())
 
     await screen.findByRole('status')
@@ -176,7 +191,7 @@ describe('Profile settings', () => {
     server.use(http.patch(UPDATE_URL, () => new HttpResponse(null, { status: 500 })))
 
     await renderSettings()
-    await replaceName('New Name')
+    await replaceName('New', 'Name')
     await userEvent.click(saveButton())
 
     await screen.findByText('Failed to update profile.')
@@ -186,11 +201,12 @@ describe('Profile settings', () => {
   it('shows the name the API saved, not the raw input', async () => {
     // The backend strips surrounding whitespace - the input should reflect that.
     await renderSettings()
-    await replaceName('  Spaced Name  ')
+    await replaceName('  Spaced  ', '  Name  ')
     await userEvent.click(saveButton())
 
     await screen.findByRole('status')
-    expect(screen.getByLabelText('Name input')).toHaveValue('Spaced Name')
+    expect(firstNameInput()).toHaveValue('Spaced')
+    expect(lastNameInput()).toHaveValue('Name')
   })
 
   it('shows field validation errors above the form and highlights the field', async () => {
@@ -200,7 +216,7 @@ describe('Profile settings', () => {
           {
             detail: [
               {
-                loc: ['body', 'name'],
+                loc: ['body', 'last_name'],
                 msg: 'Name can only contain letters, numbers, spaces, underscores, and hyphens',
               },
             ],
@@ -211,19 +227,46 @@ describe('Profile settings', () => {
     )
 
     await renderSettings()
-    await replaceName('Bad@Name')
+    await replaceName('Good', 'Bad@Name')
     await userEvent.click(saveButton())
 
     const message = await screen.findByText(
       'Name can only contain letters, numbers, spaces, underscores, and hyphens',
     )
-    const input = screen.getByLabelText('Name input')
+    const input = lastNameInput()
 
     // Shown once, above the form - not repeated under the field
     expect(screen.getAllByText(message.textContent!)).toHaveLength(1)
     expect(message.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(input).toHaveClass('input-error')
+    expect(firstNameInput()).not.toHaveClass('input-error')
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('puts each field error on its own line', async () => {
+    server.use(
+      http.patch(UPDATE_URL, () =>
+        HttpResponse.json(
+          {
+            detail: [
+              { loc: ['body', 'first_name'], msg: 'First name must be at least 1 character' },
+              { loc: ['body', 'last_name'], msg: 'Last name must be at least 1 character' },
+            ],
+          },
+          { status: 422 },
+        ),
+      ),
+    )
+
+    await renderSettings()
+    await replaceName('', '')
+    await userEvent.click(saveButton())
+
+    const message = await screen.findByText(/First name must be at least 1 character/)
+    expect(message.textContent).toBe(
+      'First name must be at least 1 character\nLast name must be at least 1 character',
+    )
+    expect(message).toHaveClass('whitespace-pre-line')
   })
 
   it('clears the error and highlight on a successful retry', async () => {
@@ -232,7 +275,7 @@ describe('Profile settings', () => {
         UPDATE_URL,
         () =>
           HttpResponse.json(
-            { detail: [{ loc: ['body', 'name'], msg: 'Name is invalid' }] },
+            { detail: [{ loc: ['body', 'first_name'], msg: 'Name is invalid' }] },
             { status: 422 },
           ),
         { once: true },
@@ -240,16 +283,16 @@ describe('Profile settings', () => {
     )
 
     await renderSettings()
-    await replaceName('Bad@Name')
+    await replaceName('Bad@Name', 'User')
     await userEvent.click(saveButton())
     await screen.findByText('Name is invalid')
 
-    await replaceName('Good Name')
+    await replaceName('Good', 'Name')
     await userEvent.click(saveButton())
 
     await screen.findByRole('status')
     expect(screen.queryByText('Name is invalid')).not.toBeInTheDocument()
-    expect(screen.getByLabelText('Name input')).not.toHaveClass('input-error')
+    expect(firstNameInput()).not.toHaveClass('input-error')
   })
 
   it('shows a string error detail from the API', async () => {
@@ -260,7 +303,7 @@ describe('Profile settings', () => {
     )
 
     await renderSettings()
-    await replaceName('New Name')
+    await replaceName('New', 'Name')
     await userEvent.click(saveButton())
 
     expect(await screen.findByText('Something went wrong.')).toBeInTheDocument()
@@ -271,7 +314,7 @@ describe('Profile settings', () => {
     server.use(http.patch(UPDATE_URL, () => new HttpResponse(null, { status: 500 })))
 
     await renderSettings()
-    await replaceName('New Name')
+    await replaceName('New', 'Name')
     await userEvent.click(saveButton())
 
     expect(await screen.findByText('Failed to update profile.')).toBeInTheDocument()

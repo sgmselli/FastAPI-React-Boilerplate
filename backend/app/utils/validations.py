@@ -1,7 +1,7 @@
 from pydantic_core import PydanticCustomError
 import re
 
-def validate_name(value: str) -> str:
+def validate_name(value: str, field_label: str = "Name") -> str:
     MINIMUM_CHARS = 1
     MAXIMUM_CHARS = 50
     NAME_MATCH = re.match(r"^[A-Za-z0-9._ -]+$", value)
@@ -9,17 +9,17 @@ def validate_name(value: str) -> str:
     if len(value) < MINIMUM_CHARS:
         raise PydanticCustomError(
             "name_too_short",
-            f"Name must be at least {MINIMUM_CHARS} character"
+            f"{field_label} must be at least {MINIMUM_CHARS} character"
         )
     if len(value) > MAXIMUM_CHARS:
         raise PydanticCustomError(
             "name_too_long",
-            f"Name must be up to {MAXIMUM_CHARS} characters"
+            f"{field_label} must be up to {MAXIMUM_CHARS} characters"
         )
     if not NAME_MATCH:
         raise PydanticCustomError(
             "name_invalid",
-            "Name can only contain letters, numbers, spaces, underscores, and hyphens"
+            f"{field_label} can only contain letters, numbers, spaces, underscores, and hyphens"
         )
     return value
 

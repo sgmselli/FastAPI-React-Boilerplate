@@ -130,7 +130,7 @@ def shared_password_hash(shared_password: str) -> str:
 @pytest_asyncio.fixture
 async def make_user(db_session: AsyncSession, shared_password_hash: str):
     """
-    Factory fixture: make_user(email=..., name=..., google_id=None, password=<hash|None>, email_verified=True).
+    Factory fixture: make_user(email=..., first_name=..., last_name=..., google_id=None, password=<hash|None>, email_verified=True).
     Bypasses the service layer (and its own hashing) - pass a hash directly,
     or omit `password` to get one hashed from `shared_password`. Users are
     verified unless `email_verified=False`, as most tests are past registration.
@@ -138,7 +138,8 @@ async def make_user(db_session: AsyncSession, shared_password_hash: str):
 
     async def _make(
         email: str = "user@example.com",
-        name: str = "Test User",
+        first_name: str | None = "Test",
+        last_name: str | None = "User",
         google_id: str | None = None,
         password: str | None = shared_password_hash,
         email_verified: bool = True,
@@ -148,7 +149,7 @@ async def make_user(db_session: AsyncSession, shared_password_hash: str):
             google_id=google_id,
             password=password,
             email_verified_at=datetime.now(timezone.utc) if email_verified else None,
-            profile=UserProfile(name=name),
+            profile=UserProfile(first_name=first_name, last_name=last_name),
         )
         db_session.add(user)
         await db_session.commit()

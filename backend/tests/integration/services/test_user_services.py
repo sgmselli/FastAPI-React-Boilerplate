@@ -89,7 +89,8 @@ class TestCreateUserWithPassword:
 
         found = await UserService(db_session).get_user_by_id(user_id)
         assert found.profile is not None
-        assert found.profile.name is None
+        assert found.profile.first_name is None
+        assert found.profile.last_name is None
 
 
 class TestCreateUserWithoutPassword:
@@ -120,7 +121,8 @@ class TestCreateUserWithoutPassword:
 
         found = await UserService(db_session).get_user_by_id(user_id)
         assert found.profile is not None
-        assert found.profile.name is None
+        assert found.profile.first_name is None
+        assert found.profile.last_name is None
 
 
 class TestLinkGoogleId:

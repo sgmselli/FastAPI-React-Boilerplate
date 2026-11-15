@@ -13,31 +13,31 @@ describe('updateCurrentUserProfile', () => {
     server.use(
       http.patch(`${API}/profile/current`, async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json(withProfileName('New Name'))
+        return HttpResponse.json(withProfileName('New', 'Name'))
       }),
     )
 
-    await updateCurrentUserProfile({ name: 'New Name' })
+    await updateCurrentUserProfile({ first_name: 'New', last_name: 'Name' })
 
-    expect(body).toEqual({ name: 'New Name' })
+    expect(body).toEqual({ first_name: 'New', last_name: 'Name' })
   })
 
   it('returns the updated user', async () => {
-    const user = await updateCurrentUserProfile({ name: 'New Name' })
-    expect(user).toEqual(withProfileName('New Name'))
+    const user = await updateCurrentUserProfile({ first_name: 'New', last_name: 'Name' })
+    expect(user).toEqual(withProfileName('New', 'Name'))
   })
 
   it('rejects when the API returns a validation error', async () => {
     server.use(
       http.patch(`${API}/profile/current`, () =>
         HttpResponse.json(
-          { detail: [{ loc: ['body', 'name'], msg: 'Name is invalid' }] },
+          { detail: [{ loc: ['body', 'first_name'], msg: 'Name is invalid' }] },
           { status: 422 },
         ),
       ),
     )
 
-    await expect(updateCurrentUserProfile({ name: 'Bad@Name' })).rejects.toThrow()
+    await expect(updateCurrentUserProfile({ first_name: 'Bad@Name', last_name: 'User' })).rejects.toThrow()
   })
 })
 

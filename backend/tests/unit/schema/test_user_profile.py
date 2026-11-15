@@ -14,65 +14,87 @@ def error_types(exc_info: pytest.ExceptionInfo) -> set[str]:
 
 class TestUserProfileCreate:
     def test_defaults_to_an_empty_profile(self):
-        assert UserProfileCreate().model_dump() == {"name": None}
+        assert UserProfileCreate().model_dump() == {"first_name": None, "last_name": None}
 
     def test_explicit_none_is_accepted(self):
-        assert UserProfileCreate(name=None).name is None
+        profile = UserProfileCreate(first_name=None, last_name=None)
+        assert (profile.first_name, profile.last_name) == (None, None)
 
-    def test_name_is_stripped_but_case_preserved(self):
-        assert UserProfileCreate(name="  Jane Doe  ").name == "Jane Doe"
+    def test_names_are_stripped_but_case_preserved(self):
+        profile = UserProfileCreate(first_name="  Jane  ", last_name="  McDoe  ")
+        assert (profile.first_name, profile.last_name) == ("Jane", "McDoe")
 
-    def test_name_too_long_rejected(self):
+    @pytest.mark.parametrize("field", ["first_name", "last_name"])
+    def test_name_too_long_rejected(self, field):
         with pytest.raises(ValidationError) as exc_info:
-            UserProfileCreate(name="a" * 51)
+            UserProfileCreate(**{field: "a" * 51})
         assert "name_too_long" in error_types(exc_info)
 
-    def test_name_with_invalid_characters_rejected(self):
+    @pytest.mark.parametrize("field", ["first_name", "last_name"])
+    def test_name_with_invalid_characters_rejected(self, field):
         with pytest.raises(ValidationError) as exc_info:
-            UserProfileCreate(name="Jane@Doe!")
+            UserProfileCreate(**{field: "Jane@Doe!"})
         assert "name_invalid" in error_types(exc_info)
 
 
 class TestUserProfileUpdate:
-    def test_valid_name_accepted(self):
-        assert UserProfileUpdate(name="Jane_Doe-2").name == "Jane_Doe-2"
+    def test_valid_names_accepted(self):
+        profile = UserProfileUpdate(first_name="Jane_2", last_name="Doe-Smith")
+        assert (profile.first_name, profile.last_name) == ("Jane_2", "Doe-Smith")
 
-    def test_name_is_stripped_but_case_preserved(self):
-        assert UserProfileUpdate(name="  Jane Doe  ").name == "Jane Doe"
+    def test_names_are_stripped_but_case_preserved(self):
+        profile = UserProfileUpdate(first_name="  Jane  ", last_name="  McDoe  ")
+        assert (profile.first_name, profile.last_name) == ("Jane", "McDoe")
 
-    def test_missing_name_rejected(self):
+    @pytest.mark.parametrize("field", ["first_name", "last_name"])
+    def test_missing_name_rejected(self, field):
+        data = {"first_name": "Jane", "last_name": "Doe"}
+        del data[field]
         with pytest.raises(ValidationError) as exc_info:
-            UserProfileUpdate()
+            UserProfileUpdate(**data)
         assert "missing" in error_types(exc_info)
 
-    def test_whitespace_only_name_rejected(self):
+    @pytest.mark.parametrize("field", ["first_name", "last_name"])
+    def test_whitespace_only_name_rejected(self, field):
         with pytest.raises(ValidationError) as exc_info:
-            UserProfileUpdate(name="   ")
+            UserProfileUpdate(**{"first_name": "Jane", "last_name": "Doe", field: "   "})
         assert "name_too_short" in error_types(exc_info)
 
-    def test_name_too_long_rejected(self):
+    @pytest.mark.parametrize("field", ["first_name", "last_name"])
+    def test_name_too_long_rejected(self, field):
         with pytest.raises(ValidationError) as exc_info:
-            UserProfileUpdate(name="a" * 51)
+            UserProfileUpdate(**{"first_name": "Jane", "last_name": "Doe", field: "a" * 51})
         assert "name_too_long" in error_types(exc_info)
 
-    def test_name_with_invalid_characters_rejected(self):
+    @pytest.mark.parametrize("field", ["first_name", "last_name"])
+    def test_name_with_invalid_characters_rejected(self, field):
         with pytest.raises(ValidationError) as exc_info:
-            UserProfileUpdate(name="Jane@Doe!")
+            UserProfileUpdate(**{"first_name": "Jane", "last_name": "Doe", field: "Jane@Doe!"})
         assert "name_invalid" in error_types(exc_info)
 
+    @pytest.mark.parametrize("field, label", [("first_name", "First name"), ("last_name", "Last name")])
+    def test_error_message_names_the_field(self, field, label):
+        with pytest.raises(ValidationError) as exc_info:
+            UserProfileUpdate(**{"first_name": "Jane", "last_name": "Doe", field: "   "})
+        assert exc_info.value.errors()[0]["msg"] == f"{label} must be at least 1 character"
+
     def test_unknown_fields_are_dropped(self):
-        profile_update = UserProfileUpdate(name="Jane Doe", user_id=99)
-        assert profile_update.model_dump() == {"name": "Jane Doe"}
+        profile_update = UserProfileUpdate(first_name="Jane", last_name="Doe", user_id=99)
+        assert profile_update.model_dump() == {"first_name": "Jane", "last_name": "Doe"}
 
 
 class TestUserProfileResponse:
     def test_reads_completion_from_the_model(self):
-        response = UserProfileResponse.model_validate(UserProfile(name="Jane Doe"))
-        assert response.model_dump() == {"name": "Jane Doe", "is_profile_completed": True, "profile_picture_url": None}
+        response = UserProfileResponse.model_validate(UserProfile(first_name="Jane", last_name="Doe"))
+        assert response.model_dump() == {
+            "first_name": "Jane", "last_name": "Doe", "is_profile_completed": True, "profile_picture_url": None
+        }
 
     def test_empty_profile_is_not_completed(self):
         response = UserProfileResponse.model_validate(UserProfile())
-        assert response.model_dump() == {"name": None, "is_profile_completed": False, "profile_picture_url": None}
+        assert response.model_dump() == {
+            "first_name": None, "last_name": None, "is_profile_completed": False, "profile_picture_url": None
+        }
 
 
 class TestProfilePictureUrl:

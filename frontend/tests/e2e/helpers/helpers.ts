@@ -48,7 +48,9 @@ export async function verifyEmail(page: Page, code = TEST_OTP_CODE) {
 export async function completeProfile(page: Page, name: string) {
   await page.waitForURL('**/complete-profile');
 
-  await page.getByRole('textbox', { name: /Name input/i }).fill(name);
+  const [firstName, lastName] = name.split(' ');
+  await page.getByRole('textbox', { name: /First name input/i }).fill(firstName);
+  await page.getByRole('textbox', { name: /Last name input/i }).fill(lastName);
   await page.getByRole('button', { name: /Save profile button/i }).click();
 }
 

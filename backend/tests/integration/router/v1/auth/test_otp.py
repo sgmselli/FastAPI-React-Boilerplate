@@ -56,7 +56,7 @@ class TestVerify:
     async def test_correct_code_verifies_the_email_and_sends_the_welcome_email(
         self, client: AsyncClient, db_session: AsyncSession, make_user, queued_welcome_email
     ):
-        user = await make_user(email="verify2@example.com", name="Verify User", email_verified=False)
+        user = await make_user(email="verify2@example.com", first_name="Verify", last_name="User", email_verified=False)
         raw_code = await OneTimePasswordService(db_session).create(user.id)
 
         await client.post(

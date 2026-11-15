@@ -26,3 +26,8 @@ class TestValidateName:
         with pytest.raises(PydanticCustomError) as exc_info:
             validate_name("Jane@Doe!")
         assert exc_info.value.type == "name_invalid"
+
+    def test_messages_use_the_field_label(self):
+        with pytest.raises(PydanticCustomError) as exc_info:
+            validate_name("", "Last name")
+        assert str(exc_info.value) == "Last name must be at least 1 character"

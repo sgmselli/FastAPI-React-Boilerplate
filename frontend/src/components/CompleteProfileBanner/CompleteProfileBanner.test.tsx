@@ -13,7 +13,7 @@ import { CompleteProfileBanner } from './CompleteProfileBanner'
 const BANNER_TEXT = /Please complete your profile/i
 
 function profileNotCompleted() {
-  server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfileName(null))))
+  server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfileName(null, null))))
 }
 
 function signedOut() {

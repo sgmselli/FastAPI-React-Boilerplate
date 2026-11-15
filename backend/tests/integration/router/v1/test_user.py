@@ -28,7 +28,7 @@ class TestRegister:
         body = response.json()
         assert body["email"] == "new@example.com"
         assert body["display_name"] == "new@example.com"
-        assert body["profile"] == {"name": None, "is_profile_completed": False, "profile_picture_url": None}
+        assert body["profile"] == {"first_name": None, "last_name": None, "is_profile_completed": False, "profile_picture_url": None}
         assert "password" not in body
 
     async def test_does_not_sign_the_user_in(self, client: AsyncClient):
@@ -56,7 +56,8 @@ class TestRegister:
 
         user = await UserService(db_session).get_user_by_email("persisted@example.com")
         assert user.profile is not None
-        assert user.profile.name is None
+        assert user.profile.first_name is None
+        assert user.profile.last_name is None
         assert user.email_verified_at is None
 
     async def test_queues_a_code_addressed_to_the_email(self, client: AsyncClient, mocker):
@@ -120,7 +121,7 @@ class TestRegister:
 
 class TestCurrentUser:
     async def test_authenticated_returns_user(self, client: AsyncClient, make_user):
-        user = await make_user(email="current@example.com", name="Current User")
+        user = await make_user(email="current@example.com", first_name="Current", last_name="User")
         client.cookies.set("access_token", create_access_token({"sub": str(user.id)}))
 
         response = await client.get("/api/v1/user/current")
@@ -129,7 +130,7 @@ class TestCurrentUser:
         body = response.json()
         assert body["email"] == "current@example.com"
         assert body["display_name"] == "Current User"
-        assert body["profile"] == {"name": "Current User", "is_profile_completed": True, "profile_picture_url": None}
+        assert body["profile"] == {"first_name": "Current", "last_name": "User", "is_profile_completed": True, "profile_picture_url": None}
 
     async def test_missing_cookie_returns_401(self, client: AsyncClient):
         response = await client.get("/api/v1/user/current")
@@ -290,7 +291,7 @@ class TestDeleteCurrentUser:
     async def test_queues_account_deleted_email(
         self, client: AsyncClient, make_user, queued_account_deleted_email
     ):
-        user = await make_user(email="goodbye@example.com", name="Goodbye User")
+        user = await make_user(email="goodbye@example.com", first_name="Goodbye", last_name="User")
         client.cookies.set("access_token", create_access_token({"sub": str(user.id)}))
 
         await client.delete("/api/v1/user/current")

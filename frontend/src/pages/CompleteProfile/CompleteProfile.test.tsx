@@ -26,6 +26,8 @@ vi.mock('react-router-dom', async () => {
 const UPDATE_URL = `${API}/profile/current`
 
 const saveButton = () => screen.getByRole('button', { name: 'Save profile button' })
+const firstNameInput = () => screen.getByLabelText('First name input')
+const lastNameInput = () => screen.getByLabelText('Last name input')
 
 /** Stands in for the navbar - anything else reading the session's user. */
 function SessionUserName() {
@@ -52,7 +54,7 @@ async function renderCompleteProfile() {
 beforeEach(() => {
   mockNavigate.mockClear()
   mockLocationState = { returnTo: '/settings' }
-  server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfileName(null))))
+  server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfileName(null, null))))
 })
 
 describe('CompleteProfile', () => {
@@ -61,7 +63,7 @@ describe('CompleteProfile', () => {
     server.use(
       http.patch(UPDATE_URL, () => {
         nameSaved = true
-        return HttpResponse.json(withProfileName('New Name'))
+        return HttpResponse.json(withProfileName('New', 'Name'))
       }),
     )
 
@@ -81,26 +83,28 @@ describe('CompleteProfile', () => {
   it('starts with an empty name for a new account', async () => {
     await renderCompleteProfile()
 
-    expect(screen.getByLabelText('Name input')).toHaveValue('')
+    expect(firstNameInput()).toHaveValue('')
+    expect(lastNameInput()).toHaveValue('')
   })
 
   it('prefills the name Google suggested, without having saved it', async () => {
-    mockLocationState = { returnTo: '/settings', suggestedName: 'Google User' }
+    mockLocationState = { returnTo: '/settings', suggestedFirstName: 'Google', suggestedLastName: 'User' }
 
     await renderCompleteProfile()
 
-    expect(screen.getByLabelText('Name input')).toHaveValue('Google User')
+    expect(firstNameInput()).toHaveValue('Google')
+    expect(lastNameInput()).toHaveValue('User')
     // Not saved yet, so the suggestion can be saved without editing it
     expect(saveButton()).toBeEnabled()
   })
 
   it('saves the suggested name as-is', async () => {
-    mockLocationState = { returnTo: '/settings', suggestedName: 'Google User' }
+    mockLocationState = { returnTo: '/settings', suggestedFirstName: 'Google', suggestedLastName: 'User' }
     let body: Record<string, unknown> | undefined
     server.use(
       http.patch(UPDATE_URL, async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json(withProfileName('Google User'))
+        return HttpResponse.json(withProfileName('Google', 'User'))
       }),
     )
 
@@ -108,7 +112,7 @@ describe('CompleteProfile', () => {
     await userEvent.click(saveButton())
 
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/settings', { replace: true }))
-    expect(body).toEqual({ name: 'Google User' })
+    expect(body).toEqual({ first_name: 'Google', last_name: 'User' })
   })
 
   it('disables Save until a name is entered', async () => {
@@ -117,18 +121,19 @@ describe('CompleteProfile', () => {
     expect(saveButton()).toBeDisabled()
     expect(saveButton()).toHaveClass('opacity-50')
 
-    await userEvent.type(screen.getByLabelText('Name input'), 'New Name')
+    await userEvent.type(firstNameInput(), 'New')
     expect(saveButton()).toBeEnabled()
     expect(saveButton()).not.toHaveClass('opacity-50')
 
-    await userEvent.clear(screen.getByLabelText('Name input'))
+    await userEvent.clear(firstNameInput())
     expect(saveButton()).toBeDisabled()
   })
 
   it('treats whitespace alone as no change', async () => {
     await renderCompleteProfile()
 
-    await userEvent.type(screen.getByLabelText('Name input'), '   ')
+    await userEvent.type(firstNameInput(), '   ')
+    await userEvent.type(lastNameInput(), '   ')
 
     expect(saveButton()).toBeDisabled()
   })
@@ -139,16 +144,17 @@ describe('CompleteProfile', () => {
     server.use(
       http.patch(UPDATE_URL, async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json(withProfileName('New Name'))
+        return HttpResponse.json(withProfileName('New', 'Name'))
       }),
     )
 
     await renderCompleteProfile()
-    await userEvent.type(screen.getByLabelText('Name input'), 'New Name')
+    await userEvent.type(firstNameInput(), 'New')
+    await userEvent.type(lastNameInput(), 'Name')
     await userEvent.click(saveButton())
 
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/privacy-policy', { replace: true }))
-    expect(body).toEqual({ name: 'New Name' })
+    expect(body).toEqual({ first_name: 'New', last_name: 'Name' })
     expect(screen.getByTestId('session-user-name')).toHaveTextContent('New Name')
   })
 
@@ -157,7 +163,7 @@ describe('CompleteProfile', () => {
     server.use(
       http.patch(UPDATE_URL, () => {
         called = true
-        return HttpResponse.json(withProfileName('New Name'))
+        return HttpResponse.json(withProfileName('New', 'Name'))
       }),
     )
 
@@ -184,7 +190,7 @@ describe('CompleteProfile', () => {
           {
             detail: [
               {
-                loc: ['body', 'name'],
+                loc: ['body', 'first_name'],
                 msg: 'Name can only contain letters, numbers, spaces, underscores, and hyphens',
               },
             ],
@@ -195,13 +201,15 @@ describe('CompleteProfile', () => {
     )
 
     await renderCompleteProfile()
-    await userEvent.type(screen.getByLabelText('Name input'), 'Bad@Name')
+    await userEvent.type(firstNameInput(), 'Bad@Name')
+    await userEvent.type(lastNameInput(), 'User')
     await userEvent.click(saveButton())
 
     expect(
       await screen.findByText('Name can only contain letters, numbers, spaces, underscores, and hyphens'),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText('Name input')).toHaveClass('input-error')
+    expect(firstNameInput()).toHaveClass('input-error')
+    expect(lastNameInput()).not.toHaveClass('input-error')
     expect(mockNavigate).not.toHaveBeenCalled()
     expect(screen.getByTestId('session-user-name')).toHaveTextContent('test@example.com')
   })
@@ -210,7 +218,8 @@ describe('CompleteProfile', () => {
     server.use(http.patch(UPDATE_URL, () => new HttpResponse(null, { status: 500 })))
 
     await renderCompleteProfile()
-    await userEvent.type(screen.getByLabelText('Name input'), 'New Name')
+    await userEvent.type(firstNameInput(), 'New')
+    await userEvent.type(lastNameInput(), 'Name')
     await userEvent.click(saveButton())
 
     expect(await screen.findByText('Failed to save your profile.')).toBeInTheDocument()

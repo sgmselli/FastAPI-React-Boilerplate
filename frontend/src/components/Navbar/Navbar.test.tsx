@@ -79,7 +79,7 @@ describe('Navbar', () => {
     })
 
     it('falls back to the email when the profile has no name', async () => {
-      server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfileName(null))))
+      server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfileName(null, null))))
       renderWithProviders(<Navbar />)
 
       expect(await screen.findByRole('button', { name: /test@example\.com/ })).toBeInTheDocument()

@@ -7,16 +7,21 @@ import { API_URL as API } from './constants'
  * The test user with a different profile name - mirrors the backend, where
  * display_name falls back to the email when no name is set.
  */
-export function withProfileName(name: string | null): UserResponse {
+export function withProfileName(first_name: string | null, last_name: string | null): UserResponse {
   return {
     id: 1,
     email: 'test@example.com',
-    display_name: name || 'test@example.com',
-    profile: { name, is_profile_completed: name !== null, profile_picture_url: null },
+    display_name: [first_name, last_name].filter(Boolean).join(' ') || 'test@example.com',
+    profile: {
+      first_name,
+      last_name,
+      is_profile_completed: first_name !== null && last_name !== null,
+      profile_picture_url: null,
+    },
   }
 }
 
-export const testUser: UserResponse = withProfileName('Test User')
+export const testUser: UserResponse = withProfileName('Test', 'User')
 
 export const TEST_PICTURE_URL = 'https://bucket.test/profile-pictures/1/picture.webp?signed'
 
@@ -40,8 +45,8 @@ export const handlers = [
   http.post(`${API}/auth/refresh`, () => HttpResponse.json({})),
 
   http.patch(`${API}/profile/current`, async ({ request }) => {
-    const body = (await request.json()) as { name: string }
-    return HttpResponse.json(withProfileName(body.name.trim()))
+    const body = (await request.json()) as { first_name: string; last_name: string }
+    return HttpResponse.json(withProfileName(body.first_name.trim(), body.last_name.trim()))
   }),
 
   http.put(`${API}/profile/current/picture`, () => HttpResponse.json(withProfilePicture(TEST_PICTURE_URL))),

@@ -47,7 +47,7 @@ describe('PublicLayout', () => {
   })
 
   it('shows the complete profile banner to users who have not completed their profile', async () => {
-    server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfileName(null))))
+    server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfileName(null, null))))
     renderLayout()
 
     expect(await screen.findByText(/Please complete your profile/i)).toBeInTheDocument()

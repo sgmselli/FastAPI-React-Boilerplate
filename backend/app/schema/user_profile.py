@@ -7,27 +7,44 @@ from app.utils.normalizations import normalize_capital_insenitive
 from app.utils.validations import validate_name
 
 class UserProfileCreate(BaseModel):
-    name: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
 
     # Profiles start empty, so None skips normalization and validation.
-    @field_validator("name", mode="before")
+    @field_validator("first_name", "last_name", mode="before")
     @classmethod
     def normalize_names(cls, value: str | None) -> str | None:
         return None if value is None else normalize_capital_insenitive(value)
 
-    @field_validator("name")
+    @field_validator("first_name")
     @classmethod
-    def validate_names(cls, value: str | None) -> str | None:
-        return None if value is None else validate_name(value)
+    def validate_first_name(cls, value: str | None) -> str | None:
+        return None if value is None else validate_name(value, "First name")
+
+    @field_validator("last_name")
+    @classmethod
+    def validate_last_name(cls, value: str | None) -> str | None:
+        return None if value is None else validate_name(value, "Last name")
 
 class UserProfileUpdate(BaseModel):
-    name: str
+    first_name: str
+    last_name: str
 
-    normalize_names = field_validator("name", mode="before")(normalize_capital_insenitive)
-    validate_names = field_validator("name")(validate_name)
+    normalize_names = field_validator("first_name", "last_name", mode="before")(normalize_capital_insenitive)
+
+    @field_validator("first_name")
+    @classmethod
+    def validate_first_name(cls, value: str) -> str:
+        return validate_name(value, "First name")
+
+    @field_validator("last_name")
+    @classmethod
+    def validate_last_name(cls, value: str) -> str:
+        return validate_name(value, "Last name")
 
 class UserProfileResponse(BaseModel):
-    name: str | None
+    first_name: str | None
+    last_name: str | None
     is_profile_completed: bool
     # Read from the model to sign the URL, but never sent - the key is an internal detail
     profile_picture_key: str | None = Field(default=None, exclude=True)

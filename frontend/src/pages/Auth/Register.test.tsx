@@ -34,7 +34,7 @@ describe('Register', () => {
   it('renders the registration form', () => {
     renderWithProviders(<Register />, { route: '/register' })
 
-    expect(screen.queryByLabelText('Name input')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/name input/i)).not.toBeInTheDocument()
     expect(screen.getByLabelText('Register email input')).toBeInTheDocument()
     expect(screen.getByLabelText('Register password input')).toBeInTheDocument()
     expect(screen.getByLabelText('Confirm password input')).toBeInTheDocument()
@@ -74,7 +74,7 @@ describe('Register', () => {
     server.use(
       http.post(`${API}/user/register`, () => {
         called = true
-        return HttpResponse.json(withProfileName(null), { status: 201 })
+        return HttpResponse.json(withProfileName(null, null), { status: 201 })
       }),
     )
 
@@ -104,11 +104,11 @@ describe('Register', () => {
     let loggedIn = false
     server.use(
       http.post(`${API}/user/register`, () =>
-        HttpResponse.json(withProfileName(null), { status: 201 }),
+        HttpResponse.json(withProfileName(null, null), { status: 201 }),
       ),
       http.post(`${API}/auth/login`, () => {
         loggedIn = true
-        return HttpResponse.json(withProfileName(null))
+        return HttpResponse.json(withProfileName(null, null))
       }),
     )
 
@@ -132,7 +132,7 @@ describe('Register', () => {
     server.use(
       http.post(`${API}/user/register`, async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json(withProfileName(null), { status: 201 })
+        return HttpResponse.json(withProfileName(null, null), { status: 201 })
       }),
     )
 
@@ -149,7 +149,7 @@ describe('Register', () => {
     server.use(
       http.post(`${API}/user/register`, async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json(withProfileName(null), { status: 201 })
+        return HttpResponse.json(withProfileName(null, null), { status: 201 })
       }),
     )
 

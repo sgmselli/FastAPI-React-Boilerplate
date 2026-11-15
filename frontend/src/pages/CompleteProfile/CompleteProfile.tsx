@@ -8,7 +8,7 @@ import { ProfilePictureInput } from "../../components/ProfilePictureInput/Profil
 import usePageTitle from "../../hooks/usePageTitle";
 import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 
-type ProfileField = "name";
+type ProfileField = "first_name" | "last_name";
 
 export const CompleteProfile: React.FC = () => {
 
@@ -17,20 +17,27 @@ export const CompleteProfile: React.FC = () => {
     const location = useLocation();
 
     // Set by AuthCallback: where to continue to afterwards, and a name from Google to prefill
-    const state = location.state as { returnTo?: string; suggestedName?: string | null } | null;
+    const state = location.state as {
+        returnTo?: string;
+        suggestedFirstName?: string | null;
+        suggestedLastName?: string | null;
+    } | null;
     const returnTo = state?.returnTo ?? "/docs/getting-started";
 
     // -----------------------------
     // Form State
     // -----------------------------
-    const [name, setName] = useState<string>(user?.profile.name || state?.suggestedName || "");
+    const [firstName, setFirstName] = useState<string>(user?.profile.first_name || state?.suggestedFirstName || "");
+    const [lastName, setLastName] = useState<string>(user?.profile.last_name || state?.suggestedLastName || "");
 
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [fieldErrors, setFieldErrors] = useState<FieldErrors<ProfileField>>({});
 
     // Compared with the saved name, so a prefilled suggestion can be saved as-is
-    const unchanged = name.trim() === (user?.profile.name ?? "");
+    const unchanged =
+        firstName.trim() === (user?.profile.first_name ?? "") &&
+        lastName.trim() === (user?.profile.last_name ?? "");
 
     // -----------------------------
     // Handle Complete Profile
@@ -42,13 +49,13 @@ export const CompleteProfile: React.FC = () => {
         setFieldErrors({});
 
         try {
-            const updatedUser = await updateCurrentUserProfile({ name });
+            const updatedUser = await updateCurrentUserProfile({ first_name: firstName, last_name: lastName });
             setUser(updatedUser);
             navigate(returnTo, { replace: true });
         } catch (err: unknown) {
             const { message, fieldErrors } = parseApiError<ProfileField>(err, "Failed to save your profile.");
             setFieldErrors(fieldErrors);
-            setError(message ?? Object.values(fieldErrors).join(" "));
+            setError(message ?? Object.values(fieldErrors).join("\n"));
         } finally {
             setLoading(false);
         }
@@ -77,24 +84,40 @@ export const CompleteProfile: React.FC = () => {
 
                         {
                             error && (
-                                <p className="text-error">{error}</p>
+                                <p className="text-error whitespace-pre-line">{error}</p>
                             )
                         }
 
                         <form className="flex flex-col space-y-5" onSubmit={handleCompleteProfile} noValidate>
-                            <label className="form-control">
-                                <input
-                                    type="text"
-                                    placeholder="Name"
-                                    className={`input input-lg input-bordered w-full text-sm ${fieldErrors.name ? "input-error" : ""}`}
-                                    name="name"
-                                    autoComplete="name"
-                                    aria-label="Name input"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    required
-                                />
-                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <label className="form-control">
+                                    <input
+                                        type="text"
+                                        placeholder="First name"
+                                        className={`input input-lg input-bordered w-full text-sm ${fieldErrors.first_name ? "input-error" : ""}`}
+                                        name="first_name"
+                                        autoComplete="given-name"
+                                        aria-label="First name input"
+                                        value={firstName}
+                                        onChange={(e) => setFirstName(e.target.value)}
+                                        required
+                                    />
+                                </label>
+
+                                <label className="form-control">
+                                    <input
+                                        type="text"
+                                        placeholder="Last name"
+                                        className={`input input-lg input-bordered w-full text-sm ${fieldErrors.last_name ? "input-error" : ""}`}
+                                        name="last_name"
+                                        autoComplete="family-name"
+                                        aria-label="Last name input"
+                                        value={lastName}
+                                        onChange={(e) => setLastName(e.target.value)}
+                                        required
+                                    />
+                                </label>
+                            </div>
 
                             <div className="card-actions pt-4 flex flex-col gap-4">
                                 <button

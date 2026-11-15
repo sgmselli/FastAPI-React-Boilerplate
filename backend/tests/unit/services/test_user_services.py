@@ -108,7 +108,8 @@ class TestCreateUserWithPassword:
         user = await UserService(session).create_user_with_password(user_create)
 
         assert user.profile is not None
-        assert user.profile.name is None
+        assert user.profile.first_name is None
+        assert user.profile.last_name is None
         session.add.assert_called_once_with(user)
 
 
@@ -147,7 +148,8 @@ class TestCreateUserWithoutPassword:
         user = await UserService(session).create_user_without_password(user_create)
 
         assert user.profile is not None
-        assert user.profile.name is None
+        assert user.profile.first_name is None
+        assert user.profile.last_name is None
 
 
 class TestLinkGoogleId:
