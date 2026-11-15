@@ -31,6 +31,25 @@ async function fillForm() {
 }
 
 describe('Register', () => {
+  it.each([
+    ['Register password input', 'password'],
+    ['Confirm password input', 'confirm password'],
+  ])('toggles visibility of the %s on its own', async (inputLabel, buttonLabel) => {
+    renderWithProviders(<Register />, { route: '/register' })
+
+    const input = screen.getByLabelText(inputLabel)
+    const others = [screen.getByLabelText('Register password input'), screen.getByLabelText('Confirm password input')]
+      .filter((other) => other !== input)
+    expect(input).toHaveAttribute('type', 'password')
+
+    await userEvent.click(screen.getByRole('button', { name: `Show ${buttonLabel}` }))
+    expect(input).toHaveAttribute('type', 'text')
+    others.forEach((other) => expect(other).toHaveAttribute('type', 'password'))
+
+    await userEvent.click(screen.getByRole('button', { name: `Hide ${buttonLabel}` }))
+    expect(input).toHaveAttribute('type', 'password')
+  })
+
   it('renders the registration form', () => {
     renderWithProviders(<Register />, { route: '/register' })
 

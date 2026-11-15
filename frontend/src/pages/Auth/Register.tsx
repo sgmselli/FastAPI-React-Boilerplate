@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Google } from "../../components/Icons/Icons";
 import { registerUser } from "../../api/user";
@@ -16,6 +17,8 @@ export const Register: React.FC = () => {
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [confirmPassword, setConfirmPassword] = useState<string>("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [agreedToPolicies, setAgreedToPolicies] = useState<boolean>(false);
 
     const [loading, setLoading] = useState<boolean>(false);
@@ -108,34 +111,60 @@ export const Register: React.FC = () => {
                             </label>
 
                             <label className="form-control">
-                                <input
-                                    type="password"
-                                    placeholder="Password"
-                                    className={`input input-lg input-bordered w-full text-sm ${fieldErrors.password ? "input-error" : ""}`}
-                                    name="password"
-                                    autoComplete="new-password"
-                                    aria-label="Register password input"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        placeholder="Password"
+                                        className={`input input-lg input-bordered w-full text-sm pr-12 ${fieldErrors.password ? "input-error" : ""}`}
+                                        name="password"
+                                        autoComplete="new-password"
+                                        aria-label="Register password input"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                    />
+                                    <div className="absolute right-4 inset-y-0 flex items-center z-20">
+                                        <button
+                                            type="button"
+                                            className="text-gray-600 cursor-pointer"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            aria-label={showPassword ? "Hide password" : "Show password"}
+                                            tabIndex={-1}
+                                        >
+                                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        </button>
+                                    </div>
+                                </div>
                                 {fieldErrors.password && (
                                     <p className="text-red-500 text-sm mt-1">{fieldErrors.password}</p>
                                 )}
                             </label>
 
                             <label className="form-control">
-                                <input
-                                    type="password"
-                                    placeholder="Confirm password"
-                                    className={`input input-lg input-bordered w-full text-sm ${fieldErrors.confirm_password ? "input-error" : ""}`}
-                                    name="confirm_password"
-                                    autoComplete="new-password"
-                                    aria-label="Confirm password input"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    required
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        placeholder="Confirm password"
+                                        className={`input input-lg input-bordered w-full text-sm pr-12 ${fieldErrors.confirm_password ? "input-error" : ""}`}
+                                        name="confirm_password"
+                                        autoComplete="new-password"
+                                        aria-label="Confirm password input"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        required
+                                    />
+                                    <div className="absolute right-4 inset-y-0 flex items-center z-20">
+                                        <button
+                                            type="button"
+                                            className="text-gray-600 cursor-pointer"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                                            tabIndex={-1}
+                                        >
+                                            {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        </button>
+                                    </div>
+                                </div>
                                 {fieldErrors.confirm_password && (
                                     <p className="text-red-500 text-sm mt-1">{fieldErrors.confirm_password}</p>
                                 )}
