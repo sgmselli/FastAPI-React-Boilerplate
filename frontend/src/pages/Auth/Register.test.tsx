@@ -31,10 +31,29 @@ async function fillForm() {
 }
 
 describe('Register', () => {
+  it.each([
+    ['Register password input', 'password'],
+    ['Confirm password input', 'confirm password'],
+  ])('toggles visibility of the %s on its own', async (inputLabel, buttonLabel) => {
+    renderWithProviders(<Register />, { route: '/register' })
+
+    const input = screen.getByLabelText(inputLabel)
+    const others = [screen.getByLabelText('Register password input'), screen.getByLabelText('Confirm password input')]
+      .filter((other) => other !== input)
+    expect(input).toHaveAttribute('type', 'password')
+
+    await userEvent.click(screen.getByRole('button', { name: `Show ${buttonLabel}` }))
+    expect(input).toHaveAttribute('type', 'text')
+    others.forEach((other) => expect(other).toHaveAttribute('type', 'password'))
+
+    await userEvent.click(screen.getByRole('button', { name: `Hide ${buttonLabel}` }))
+    expect(input).toHaveAttribute('type', 'password')
+  })
+
   it('renders the registration form', () => {
     renderWithProviders(<Register />, { route: '/register' })
 
-    expect(screen.queryByLabelText('Name input')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/name input/i)).not.toBeInTheDocument()
     expect(screen.getByLabelText('Register email input')).toBeInTheDocument()
     expect(screen.getByLabelText('Register password input')).toBeInTheDocument()
     expect(screen.getByLabelText('Confirm password input')).toBeInTheDocument()
@@ -74,7 +93,7 @@ describe('Register', () => {
     server.use(
       http.post(`${API}/user/register`, () => {
         called = true
-        return HttpResponse.json(withProfileName(null), { status: 201 })
+        return HttpResponse.json(withProfileName(null, null), { status: 201 })
       }),
     )
 
@@ -104,11 +123,11 @@ describe('Register', () => {
     let loggedIn = false
     server.use(
       http.post(`${API}/user/register`, () =>
-        HttpResponse.json(withProfileName(null), { status: 201 }),
+        HttpResponse.json(withProfileName(null, null), { status: 201 }),
       ),
       http.post(`${API}/auth/login`, () => {
         loggedIn = true
-        return HttpResponse.json(withProfileName(null))
+        return HttpResponse.json(withProfileName(null, null))
       }),
     )
 
@@ -132,7 +151,7 @@ describe('Register', () => {
     server.use(
       http.post(`${API}/user/register`, async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json(withProfileName(null), { status: 201 })
+        return HttpResponse.json(withProfileName(null, null), { status: 201 })
       }),
     )
 
@@ -149,7 +168,7 @@ describe('Register', () => {
     server.use(
       http.post(`${API}/user/register`, async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json(withProfileName(null), { status: 201 })
+        return HttpResponse.json(withProfileName(null, null), { status: 201 })
       }),
     )
 

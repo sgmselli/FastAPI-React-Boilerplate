@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Navigate, Routes, Route } from "react-router-d
 
 import { PublicLayout } from "./layouts/PublicLayout";
 import { AppLayout } from "./layouts/AppLayout";
+import { CompleteProfileLayout } from "./layouts/CompleteProfileLayout";
 import { ScrollToTop } from "./components/ScrollToTop";
 import Landing from "./pages/Landing/Landing";
 import { NotFound } from "./pages/NotFound/NotFound";
@@ -13,13 +14,14 @@ import { AuthProvider } from "./contexts/auth";
 import { ToastProvider } from "./contexts/toast";
 
 import AuthorizedRoute from "./components/ProtectedRoutes/AuthorizedRoute";
+import CompletedProfileRoute from "./components/ProtectedRoutes/CompletedProfileRoute";
 import UnauthorisedRoute from "./components/ProtectedRoutes/UnauthorizedRoute";
 import { Logout } from "./pages/Auth/Logout";
 import { AuthCallback } from "./pages/Auth/AuthCallback";
 import { ForgotPassword } from "./pages/ForgotPassword/ForgotPassword";
 import { ResetPassword } from "./pages/ResetPassword/ResetPassword";
 import { Settings } from "./pages/Settings/Settings";
-import { CompleteProfile } from "./pages/CompleteProfile/CompleteProfile";
+import { CompleteProfileRedirect, CompleteProfileStep } from "./pages/CompleteProfile/CompleteProfileStep";
 import { VerifyEmail } from "./pages/VerifyEmail/VerifyEmail";
 import { AboutUs } from "./pages/AboutUs/AboutUs";
 import { Faq } from "./pages/Faq/Faq";
@@ -53,14 +55,17 @@ function App() {
 
               {/* Must be authenticated routes */}
               <Route element={<AuthorizedRoute />}>
-                <Route element={<AppLayout />}>
-                  <Route path="/docs" element={<Navigate to={firstDocsPath} replace />} />
-                  <Route path="/docs/:slug" element={<DocsStep />} />
-                  <Route path="/settings" element={<Settings />} />
+                <Route element={<CompletedProfileRoute />}>
+                  <Route element={<AppLayout />}>
+                    <Route path="/docs" element={<Navigate to={firstDocsPath} replace />} />
+                    <Route path="/docs/:slug" element={<DocsStep />} />
+                    <Route path="/settings" element={<Settings />} />
+                  </Route>
                 </Route>
 
-                <Route element={<PublicLayout />}>
-                  <Route path="/complete-profile" element={<CompleteProfile />} />
+                <Route element={<CompleteProfileLayout />}>
+                  <Route path="/complete-profile" element={<CompleteProfileRedirect />} />
+                  <Route path="/complete-profile/:slug" element={<CompleteProfileStep />} />
                 </Route>
 
                 <Route path="/logout" element={<Logout />} />

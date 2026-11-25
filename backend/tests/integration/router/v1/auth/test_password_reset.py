@@ -79,7 +79,7 @@ class TestRequest:
     async def test_email_is_addressed_to_the_profile_name(
         self, client: AsyncClient, make_user, queued_email
     ):
-        await make_user(email="named@example.com", name="Named User")
+        await make_user(email="named@example.com", first_name="Named", last_name="User")
 
         await client.post(REQUEST_URL, json={"email": "named@example.com"})
 

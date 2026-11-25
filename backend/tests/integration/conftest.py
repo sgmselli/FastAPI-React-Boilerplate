@@ -102,16 +102,13 @@ async def client(db_session: AsyncSession):
 
 
 @pytest.fixture
-def s3_client(client: AsyncClient, monkeypatch):
+def s3_client(client: AsyncClient):
     """
     Mock S3Client for requests made through `client`, so no test touches a real
-    bucket. Services get the client through DI, but the response schema looks it
-    up directly to sign URLs, so both are replaced. Depends on `client`, whose
-    teardown clears every dependency override.
+    bucket. Depends on `client`, whose teardown clears every dependency override.
     """
     mock = make_mock_s3_client()
     app.dependency_overrides[get_s3_client] = lambda: mock
-    monkeypatch.setattr("app.schema.user_profile.get_s3_client", lambda: mock)
     return mock
 
 
@@ -130,7 +127,7 @@ def shared_password_hash(shared_password: str) -> str:
 @pytest_asyncio.fixture
 async def make_user(db_session: AsyncSession, shared_password_hash: str):
     """
-    Factory fixture: make_user(email=..., name=..., google_id=None, password=<hash|None>, email_verified=True).
+    Factory fixture: make_user(email=..., first_name=..., last_name=..., google_id=None, password=<hash|None>, email_verified=True).
     Bypasses the service layer (and its own hashing) - pass a hash directly,
     or omit `password` to get one hashed from `shared_password`. Users are
     verified unless `email_verified=False`, as most tests are past registration.
@@ -138,7 +135,8 @@ async def make_user(db_session: AsyncSession, shared_password_hash: str):
 
     async def _make(
         email: str = "user@example.com",
-        name: str = "Test User",
+        first_name: str | None = "Test",
+        last_name: str | None = "User",
         google_id: str | None = None,
         password: str | None = shared_password_hash,
         email_verified: bool = True,
@@ -148,7 +146,7 @@ async def make_user(db_session: AsyncSession, shared_password_hash: str):
             google_id=google_id,
             password=password,
             email_verified_at=datetime.now(timezone.utc) if email_verified else None,
-            profile=UserProfile(name=name),
+            profile=UserProfile(first_name=first_name, last_name=last_name),
         )
         db_session.add(user)
         await db_session.commit()

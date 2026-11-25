@@ -7,8 +7,8 @@ from app.router.v1.auth import google_auth
 from app.services.user_services import UserService
 
 
-def fake_token(google_id="google-abc", email="googleuser@example.com", name="Google User"):
-    return {"userinfo": {"sub": google_id, "email": email, "name": name}}
+def fake_token(google_id="google-abc", email="googleuser@example.com", given_name="Google", family_name="User"):
+    return {"userinfo": {"sub": google_id, "email": email, "given_name": given_name, "family_name": family_name}}
 
 
 def mock_authorize(mocker, **kwargs):
@@ -91,39 +91,49 @@ class TestGoogleCallback:
     async def test_new_user_gets_the_google_name_as_a_suggestion_not_a_saved_name(
         self, client: AsyncClient, db_session: AsyncSession, mocker
     ):
-        mock_authorize(mocker, return_value=fake_token(email="suggest@example.com", name="Jane O'Brien"))
+        mock_authorize(mocker, return_value=fake_token(email="suggest@example.com", given_name="Jane", family_name="O'Brien"))
 
         response = await client.get("/api/v1/auth/google/callback", follow_redirects=False)
 
         # Fragment, not query string - it never reaches a server or an access log
-        assert response.headers["location"].endswith("/auth/callback#name=Jane%20O%27Brien")
+        assert response.headers["location"].endswith("/auth/callback#first_name=Jane&last_name=O%27Brien")
         user = await UserService(db_session).get_user_by_email("suggest@example.com")
-        assert user.profile.name is None
+        assert user.profile.first_name is None
+        assert user.profile.last_name is None
 
     async def test_linked_user_without_a_name_gets_the_suggestion(
         self, client: AsyncClient, make_user, mocker
     ):
-        await make_user(email="link-nameless@example.com", name=None)
+        await make_user(email="link-nameless@example.com", first_name=None, last_name=None)
         mock_authorize(mocker, return_value=fake_token(google_id="google-nameless", email="link-nameless@example.com"))
 
         response = await client.get("/api/v1/auth/google/callback", follow_redirects=False)
 
-        assert response.headers["location"].endswith("/auth/callback#name=Google%20User")
+        assert response.headers["location"].endswith("/auth/callback#first_name=Google&last_name=User")
 
     async def test_no_suggestion_when_the_profile_already_has_a_name(
         self, client: AsyncClient, make_user, mocker
     ):
-        await make_user(email="named-google@example.com", name="Saved Name", google_id="google-named")
+        await make_user(email="named-google@example.com", first_name="Saved", last_name="Name", google_id="google-named")
         mock_authorize(mocker, return_value=fake_token(google_id="google-named", email="named-google@example.com"))
 
         response = await client.get("/api/v1/auth/google/callback", follow_redirects=False)
 
         assert response.headers["location"].endswith("/auth/callback")
 
+    async def test_suggestion_skips_a_missing_last_name(
+        self, client: AsyncClient, mocker
+    ):
+        mock_authorize(mocker, return_value=fake_token(email="first-only@example.com", family_name=None))
+
+        response = await client.get("/api/v1/auth/google/callback", follow_redirects=False)
+
+        assert response.headers["location"].endswith("/auth/callback#first_name=Google")
+
     async def test_no_suggestion_when_google_sends_no_name(
         self, client: AsyncClient, mocker
     ):
-        mock_authorize(mocker, return_value=fake_token(email="no-name@example.com", name=None))
+        mock_authorize(mocker, return_value=fake_token(email="no-name@example.com", given_name=None, family_name=None))
 
         response = await client.get("/api/v1/auth/google/callback", follow_redirects=False)
 

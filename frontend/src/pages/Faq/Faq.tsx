@@ -16,7 +16,7 @@ const faqs = [
     },
     {
         question: "What's included out of the box?",
-        answer: "Email and password sign up with verification codes, Google sign in, password resets, profile pictures stored in S3-compatible storage, transactional email via Brevo and Celery, Google Analytics, legal pages, a 404 page, automated tests and a full deployment pipeline.",
+        answer: "Email and password sign up with verification codes, Google sign in, password resets, S3-compatible file storage, transactional email via Brevo and Celery, Google Analytics, legal pages, a 404 page, automated tests and a full deployment pipeline.",
     },
     {
         question: "How do I run it locally?",

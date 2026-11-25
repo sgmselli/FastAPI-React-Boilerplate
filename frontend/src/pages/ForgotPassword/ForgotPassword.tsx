@@ -5,12 +5,11 @@ import type { ForgotPasswordRequest } from "../../types/forgotPassword";
 import { requestPasswordReset } from "../../api/forgotPassword";
 import { Loading } from "../../components/Loading";
 import usePageTitle from "../../hooks/usePageTitle";
-import useCooldown from "../../hooks/useCooldown";
+import useCooldown, { PASSWORD_RESET_COOLDOWN_SECONDS } from "../../hooks/useCooldown";
+import { CooldownNotice } from "../../components/CooldownNotice";
 import { parseApiError } from "../../utils/apiErrors";
 import { normalizeEmail } from "../../utils/normalizations";
 
-// Mirrors password_reset_cooldown_seconds on the backend, which ignores requests inside it
-export const REQUEST_COOLDOWN_SECONDS = 60;
 
 export const ForgotPassword: React.FC = () => {
     // -----------------------------
@@ -24,7 +23,7 @@ export const ForgotPassword: React.FC = () => {
 
     // Tracked per email so a typo can be corrected straight away
     const [requestedEmail, setRequestedEmail] = useState<string | null>(null);
-    const { secondsLeft: secondsUntilResend, start: startResendCooldown } = useCooldown(REQUEST_COOLDOWN_SECONDS);
+    const { secondsLeft: secondsUntilResend, start: startResendCooldown } = useCooldown(PASSWORD_RESET_COOLDOWN_SECONDS);
 
     const coolingDown = secondsUntilResend > 0 && normalizeEmail(email) === requestedEmail;
 
@@ -89,25 +88,22 @@ export const ForgotPassword: React.FC = () => {
                                         link to reset your password. The link expires in 15 minutes.
                                     </p>
 
-                                    <p className="text-[16px] text-gray-700">
-                                        Didn't get it? Check your spam folder, or{" "}
-                                        {
-                                            secondsUntilResend > 0 ? (
-                                                <span className="text-gray-500">request another link in {secondsUntilResend}s</span>
-                                            ) : (
-                                                <button
-                                                    type="button"
-                                                    onClick={handleForgotPassword}
-                                                    disabled={loading}
-                                                    aria-label="Send another link button"
-                                                    className="underline hover:text-blue-400 cursor-pointer"
-                                                >
-                                                    send another link
-                                                </button>
-                                            )
-                                        }
-                                        .
-                                    </p>
+                                    <div className="flex flex-col gap-1">
+                                        <p className="text-[16px] text-gray-700">
+                                            Didn't get it? Check your spam folder, or{" "}
+                                            <button
+                                                type="button"
+                                                onClick={handleForgotPassword}
+                                                disabled={loading || secondsUntilResend > 0}
+                                                aria-label="Send another link button"
+                                                className="underline hover:text-blue-400 cursor-pointer disabled:text-gray-400 disabled:no-underline disabled:hover:text-gray-400 disabled:cursor-not-allowed"
+                                            >
+                                                send another link
+                                            </button>
+                                            .
+                                        </p>
+                                        <CooldownNotice secondsLeft={secondsUntilResend} action="send another link" />
+                                    </div>
 
                                     <p className="text-[16px] text-gray-700">
                                         Wrong email?{" "}
@@ -156,14 +152,6 @@ export const ForgotPassword: React.FC = () => {
                                             />
                                         </label>
 
-                                        {
-                                            coolingDown && (
-                                                <p className="text-[16px] text-gray-500">
-                                                    You can request another link for this email in {secondsUntilResend}s.
-                                                </p>
-                                            )
-                                        }
-
                                         <div className="card-actions pt-4 flex flex-col gap-4">
                                             <button
                                                 type="submit"
@@ -181,6 +169,10 @@ export const ForgotPassword: React.FC = () => {
                                                         <p>Send reset link</p>
                                                 }
                                             </button>
+                                            <CooldownNotice
+                                                secondsLeft={coolingDown ? secondsUntilResend : 0}
+                                                action="request another link for this email"
+                                            />
                                         </div>
 
                                         <p className="mt-2 text-[16px] text-gray-700">

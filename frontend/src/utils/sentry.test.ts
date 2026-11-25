@@ -50,7 +50,7 @@ describe('scrubBreadcrumb', () => {
   it('removes fragments from navigation breadcrumbs', () => {
     const breadcrumb = scrubBreadcrumb({
       category: 'navigation',
-      data: { from: '/auth/callback#name=Jane%20Doe', to: '/complete-profile' },
+      data: { from: '/auth/callback#first_name=Jane&last_name=Doe', to: '/complete-profile' },
     })
 
     expect(breadcrumb.data).toEqual({ from: '/auth/callback', to: '/complete-profile' })

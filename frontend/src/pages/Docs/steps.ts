@@ -52,7 +52,7 @@ export const docsSteps: DocsStepDefinition[] = [
     {
         slug: "file-storage",
         title: "File storage",
-        subtitle: "Store uploads like profile pictures in a private bucket.",
+        subtitle: "Set up a private bucket for storing files.",
         content: FileStorage,
     },
     {

@@ -3,6 +3,8 @@ import { useState } from "react";
 import { requestPasswordReset } from "../../api/forgotPassword";
 import { useAuth } from "../../contexts/auth";
 import { useToast } from "../../contexts/toast";
+import useCooldown, { PASSWORD_RESET_COOLDOWN_SECONDS } from "../../hooks/useCooldown";
+import { CooldownNotice } from "../../components/CooldownNotice";
 import { parseApiError } from "../../utils/apiErrors";
 
 export const PasswordSettings: React.FC = () => {
@@ -10,11 +12,13 @@ export const PasswordSettings: React.FC = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
 
-    // Disabled as soon as it's clicked and kept that way once the email is
-    // sent - only re-enabled if sending fails, so they can try again
+    // Disabled while sending, then for the backend's cooldown once sent.
+    // Re-enabled straight away if sending fails, so they can try again
     const [sending, setSending] = useState<boolean>(false);
-    const [sent, setSent] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const { secondsLeft: secondsUntilResend, start: startResendCooldown } = useCooldown(PASSWORD_RESET_COOLDOWN_SECONDS);
+
+    const disabled = sending || secondsUntilResend > 0;
 
     // -----------------------------
     // Handle Change Password
@@ -30,7 +34,7 @@ export const PasswordSettings: React.FC = () => {
 
         try {
             await requestPasswordReset({ email: user.email });
-            setSent(true);
+            startResendCooldown();
             showToast("We've emailed you a link to change your password.");
         } catch (err: unknown) {
             const { message } = parseApiError(err, "Failed to send the email.");
@@ -53,16 +57,17 @@ export const PasswordSettings: React.FC = () => {
                 )
             }
 
-            <div>
+            <div className="flex flex-col items-start gap-2">
                 <button
                     type="button"
                     onClick={handleChangePassword}
-                    disabled={sending || sent}
-                    className={`btn text-[15px] fastapi-color-bg surface-color font-medium rounded-lg px-6 ${sending || sent ? "opacity-50" : ""}`}
+                    disabled={disabled}
+                    className={`btn text-[15px] fastapi-color-bg surface-color font-medium rounded-lg px-6 ${disabled ? "opacity-50" : ""}`}
                     aria-label="Send me a link button"
                 >
                     Send me a link
                 </button>
+                <CooldownNotice secondsLeft={secondsUntilResend} action="send another link" />
             </div>
         </div>
     );

@@ -30,10 +30,6 @@ class BaseAppSettings(BaseSettings):
     otp_resend_cooldown_seconds: int = 60
     otp_fixed_code: str | None = None
     password_reset_cooldown_seconds: int = 60
-    profile_picture_max_bytes: int = 5 * 1024 * 1024
-    profile_picture_max_pixels: int = 40_000_000
-    profile_picture_size: int = 512
-    profile_picture_url_expire_seconds: int = 3600
     log_level: str = "INFO"
 
     debug: bool | None = None

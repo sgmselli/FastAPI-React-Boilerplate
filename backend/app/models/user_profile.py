@@ -9,8 +9,8 @@ class UserProfile(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False, index=True)
-    name = Column(String(200), nullable=True)
-    profile_picture_key = Column(String(255), nullable=True)
+    first_name = Column(String(50), nullable=True)
+    last_name = Column(String(50), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
@@ -18,4 +18,4 @@ class UserProfile(Base):
 
     @property
     def is_profile_completed(self) -> bool:
-        return None not in (self.name,)
+        return None not in (self.first_name, self.last_name)

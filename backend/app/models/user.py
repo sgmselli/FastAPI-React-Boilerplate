@@ -31,6 +31,8 @@ class User(Base):
 
     @property
     def display_name(self) -> str:
-        if self.profile is not None and self.profile.name:
-            return self.profile.name
+        if self.profile is not None:
+            full_name = " ".join(filter(None, (self.profile.first_name, self.profile.last_name)))
+            if full_name:
+                return full_name
         return self.email

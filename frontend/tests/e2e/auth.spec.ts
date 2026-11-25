@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-import { completeProfile, expectOnGettingStartedPage, loginUser, registerUser, skipProfile, TEST_PASSWORD, uniqueEmail, verifyEmail } from './helpers/helpers';
+import { completeProfile, expectOnGettingStartedPage, loginUser, registerUser, TEST_PASSWORD, uniqueEmail, verifyEmail } from './helpers/helpers';
 
 /**
  * Runs against the real stack (reverse proxy -> backend -> Postgres) started
@@ -46,25 +46,23 @@ test('a wrong verification code shows an error and does not sign in', async ({ p
   await expect(page).toHaveURL(/\/verify-email/);
 });
 
-test('skipping the profile step falls back to the email, and is offered again on next sign in', async ({ page }) => {
-  const email = uniqueEmail('skip');
+test('the profile must be completed before using the app, even after signing in again', async ({ page }) => {
+  const email = uniqueEmail('mandatory');
 
   await registerUser(page, { email });
   await verifyEmail(page);
-  await skipProfile(page);
+  await page.waitForURL('**/complete-profile/name');
 
-  await expectOnGettingStartedPage(page, email);
-  await expect(page.getByText('Please complete your profile.')).toBeVisible();
+  await page.goto('/docs/getting-started');
+  await page.waitForURL('**/complete-profile/name');
 
   await page.goto('/logout');
   await page.waitForURL('**/login');
 
   await loginUser(page, { email });
 
-  // Still no name, so the optional step comes round again before the account page
-  await completeProfile(page, 'Skip User');
-  await expectOnGettingStartedPage(page, 'Skip User');
-  await expect(page.getByText('Please complete your profile.')).toBeHidden();
+  await completeProfile(page, 'Mandatory User');
+  await expectOnGettingStartedPage(page, 'Mandatory User');
 });
 
 test('registered user can sign in', async ({ page }) => {

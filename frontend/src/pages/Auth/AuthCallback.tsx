@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Loading } from "../../components/Loading";
 import { useAuth } from "../../contexts/auth";
+import { firstCompleteProfilePath } from "../CompleteProfile/steps";
 
 export const AuthCallback = () => {
   const navigate = useNavigate();
@@ -15,11 +16,13 @@ export const AuthCallback = () => {
     const returnTo = sessionStorage.getItem("returnTo") || "/docs/getting-started";
     sessionStorage.removeItem("returnTo");
 
-    // Offer the optional profile step first, then carry on to where they were going
+    // Complete the profile first, then carry on to where they were going
     if (user && !user.profile.is_profile_completed) {
-      // Google sign in sends the name it knows as a suggestion, e.g. #name=Jane%20Doe
-      const suggestedName = new URLSearchParams(hash.slice(1)).get("name");
-      navigate("/complete-profile", { replace: true, state: { returnTo, suggestedName } });
+      // Google sign in sends the name it knows as a suggestion, e.g. #first_name=Jane&last_name=Doe
+      const fragment = new URLSearchParams(hash.slice(1));
+      const suggestedFirstName = fragment.get("first_name");
+      const suggestedLastName = fragment.get("last_name");
+      navigate(firstCompleteProfilePath, { replace: true, state: { returnTo, suggestedFirstName, suggestedLastName } });
       return;
     }
 

@@ -43,7 +43,7 @@ The HTML for each template is kept in [`documentation/email-templates/`](email-t
 | Account deleted | [`account-deleted.html`](email-templates/account-deleted.html) | `name` |
 | Verify email | [`verify-email.html`](email-templates/verify-email.html) | `name`, `code` |
 
-`name` is always filled in, but it isn't always a name. It comes from [`User.display_name`](../backend/app/models/user.py), which is the profile name when the user has set one and their email address when they haven't. A new account has no profile name yet, so the welcome email always gets the email address - word the templates so "Hi jane@example.com" still reads naturally.
+`name` is always filled in, but it isn't always a name. It comes from [`User.display_name`](../backend/app/models/user.py), which is the profile's first and last name when the user has set them and their email address when they haven't. A new account has no profile name yet, so the welcome email always gets the email address - word the templates so "Hi jane@example.com" still reads naturally.
 
 > **The repository copies are for tracking only.** Brevo is the source of truth — the live template is whatever the dashboard holds, and nothing in this codebase reads these files at runtime. They exist so the markup has a history and can be reviewed in a pull request. Edit the real template in the Brevo UI; if you change the HTML meaningfully, paste it back here so the two don't drift.
 

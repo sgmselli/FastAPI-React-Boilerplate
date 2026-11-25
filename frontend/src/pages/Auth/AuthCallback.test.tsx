@@ -67,7 +67,7 @@ describe('AuthCallback', () => {
 
   describe('when the profile is not completed', () => {
     beforeEach(() => {
-      server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfileName(null))))
+      server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfileName(null, null))))
     })
 
     it('offers the complete profile page first, carrying on to returnTo afterwards', async () => {
@@ -76,21 +76,21 @@ describe('AuthCallback', () => {
       renderWithProviders(<AuthCallback />, { route: '/auth/callback' })
 
       await waitFor(() =>
-        expect(mockNavigate).toHaveBeenCalledWith('/complete-profile', {
+        expect(mockNavigate).toHaveBeenCalledWith('/complete-profile/name', {
           replace: true,
-          state: { returnTo: '/privacy-policy', suggestedName: null },
+          state: { returnTo: '/privacy-policy', suggestedFirstName: null, suggestedLastName: null },
         }),
       )
       expect(mockNavigate).not.toHaveBeenCalledWith('/privacy-policy', expect.anything())
     })
 
     it('passes on the name Google suggested in the fragment', async () => {
-      renderWithProviders(<AuthCallback />, { route: '/auth/callback#name=Jane%20O%27Brien' })
+      renderWithProviders(<AuthCallback />, { route: '/auth/callback#first_name=Jane&last_name=O%27Brien' })
 
       await waitFor(() =>
-        expect(mockNavigate).toHaveBeenCalledWith('/complete-profile', {
+        expect(mockNavigate).toHaveBeenCalledWith('/complete-profile/name', {
           replace: true,
-          state: { returnTo: '/docs/getting-started', suggestedName: "Jane O'Brien" },
+          state: { returnTo: '/docs/getting-started', suggestedFirstName: 'Jane', suggestedLastName: "O'Brien" },
         }),
       )
     })
@@ -99,9 +99,9 @@ describe('AuthCallback', () => {
       renderWithProviders(<AuthCallback />, { route: '/auth/callback' })
 
       await waitFor(() =>
-        expect(mockNavigate).toHaveBeenCalledWith('/complete-profile', {
+        expect(mockNavigate).toHaveBeenCalledWith('/complete-profile/name', {
           replace: true,
-          state: { returnTo: '/docs/getting-started', suggestedName: null },
+          state: { returnTo: '/docs/getting-started', suggestedFirstName: null, suggestedLastName: null },
         }),
       )
     })
