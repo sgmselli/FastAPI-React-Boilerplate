@@ -365,7 +365,8 @@ describe('Password settings', () => {
 
       expect(changePasswordButton()).toBeDisabled()
       expect(changePasswordButton()).toHaveClass('opacity-50')
-      expect(changePasswordButton()).toHaveTextContent(`Send another link in ${PASSWORD_RESET_COOLDOWN_SECONDS}s`)
+      expect(changePasswordButton()).toHaveTextContent('Send me a link')
+      expect(screen.getByText(`You can send another link in ${PASSWORD_RESET_COOLDOWN_SECONDS}s.`)).toBeInTheDocument()
 
       // One second at a time - each tick re-renders and schedules the next
       for (let second = 0; second < PASSWORD_RESET_COOLDOWN_SECONDS; second++) {
@@ -375,7 +376,7 @@ describe('Password settings', () => {
       }
 
       expect(changePasswordButton()).toBeEnabled()
-      expect(changePasswordButton()).toHaveTextContent('Send me a link')
+      expect(screen.queryByText(/you can send another link in/i)).not.toBeInTheDocument()
     })
   })
 

@@ -6,6 +6,7 @@ import { useAuth } from "../../contexts/auth";
 import { Loading } from "../../components/Loading";
 import usePageTitle from "../../hooks/usePageTitle";
 import useCooldown, { OTP_RESEND_COOLDOWN_SECONDS } from "../../hooks/useCooldown";
+import { CooldownNotice } from "../../components/CooldownNotice";
 import { parseApiError } from "../../utils/apiErrors";
 
 const CODE_LENGTH = 6;
@@ -160,25 +161,22 @@ export const VerifyEmail: React.FC = () => {
                                             </button>
                                         </div>
 
-                                        <p className="text-[16px] text-gray-700">
-                                            Didn't get it? Check your spam folder, or{" "}
-                                            {
-                                                secondsUntilResend > 0 ? (
-                                                    <span className="text-gray-500">request a new code in {secondsUntilResend}s</span>
-                                                ) : (
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleResend}
-                                                        disabled={resending}
-                                                        aria-label="Resend code button"
-                                                        className="underline hover:text-blue-400 cursor-pointer"
-                                                    >
-                                                        send a new code
-                                                    </button>
-                                                )
-                                            }
-                                            .
-                                        </p>
+                                        <div className="flex flex-col gap-1">
+                                            <p className="text-[16px] text-gray-700">
+                                                Didn't get it? Check your spam folder, or{" "}
+                                                <button
+                                                    type="button"
+                                                    onClick={handleResend}
+                                                    disabled={resending || secondsUntilResend > 0}
+                                                    aria-label="Resend code button"
+                                                    className="underline hover:text-blue-400 cursor-pointer disabled:text-gray-400 disabled:no-underline disabled:hover:text-gray-400 disabled:cursor-not-allowed"
+                                                >
+                                                    send a new code
+                                                </button>
+                                                .
+                                            </p>
+                                            <CooldownNotice secondsLeft={secondsUntilResend} action="send a new code" />
+                                        </div>
 
                                         <p className="mt-2 text-[16px] text-gray-700">
                                             <span className="underline hover:text-blue-400">

@@ -4,6 +4,7 @@ import { requestPasswordReset } from "../../api/forgotPassword";
 import { useAuth } from "../../contexts/auth";
 import { useToast } from "../../contexts/toast";
 import useCooldown, { PASSWORD_RESET_COOLDOWN_SECONDS } from "../../hooks/useCooldown";
+import { CooldownNotice } from "../../components/CooldownNotice";
 import { parseApiError } from "../../utils/apiErrors";
 
 export const PasswordSettings: React.FC = () => {
@@ -56,7 +57,7 @@ export const PasswordSettings: React.FC = () => {
                 )
             }
 
-            <div>
+            <div className="flex flex-col items-start gap-2">
                 <button
                     type="button"
                     onClick={handleChangePassword}
@@ -64,8 +65,9 @@ export const PasswordSettings: React.FC = () => {
                     className={`btn text-[15px] fastapi-color-bg surface-color font-medium rounded-lg px-6 ${disabled ? "opacity-50" : ""}`}
                     aria-label="Send me a link button"
                 >
-                    {secondsUntilResend > 0 ? `Send another link in ${secondsUntilResend}s` : "Send me a link"}
+                    Send me a link
                 </button>
+                <CooldownNotice secondsLeft={secondsUntilResend} action="send another link" />
             </div>
         </div>
     );

@@ -3,7 +3,7 @@ import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 
-import { Google } from "../../components/Icons/Icons";
+import { GoogleAuthButton } from "../../components/GoogleAuthButton/GoogleAuthButton";
 import type { UserLoginRequest } from "../../types/user";
 import { useAuth } from "../../contexts/auth";
 import { Loading } from "../../components/Loading";
@@ -69,13 +69,6 @@ export const Login: React.FC = () => {
         }
     };
 
-    // -----------------------------
-    // Handle Google Login
-    // -----------------------------
-    const handleGoogleLogin = async () => {
-        window.location.href = "api/v1/auth/google/login";
-    };
-
     usePageTitle("Sign in");
 
     return (
@@ -94,15 +87,7 @@ export const Login: React.FC = () => {
                         }
 
                         <div className="flex flex-col space-y-5">
-                            <button
-                                onClick={handleGoogleLogin}
-                                disabled={loading}
-                                className="btn btn-lg text-[15px] surface-color-bg text-color font-medium rounded-lg border-gray-300 hover:bg-gray-100! btn-block mb-0 flex items-center justify-center gap-4"
-                                aria-label="Sign in with Google button"
-                            >
-                                <Google />
-                                Sign in with Google
-                            </button>
+                            <GoogleAuthButton label="Sign in with Google" disabled={loading} />
 
                             <div className="h-px divider my-6 before:bg-gray-300 after:bg-gray-300 text-gray-400">
                                 OR

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { Google } from "../../components/Icons/Icons";
+import { GoogleAuthButton } from "../../components/GoogleAuthButton/GoogleAuthButton";
 import { registerUser } from "../../api/user";
 import type { UserCreateRequest } from "../../types/user";
 import { Loading } from "../../components/Loading";
@@ -53,13 +53,6 @@ export const Register: React.FC = () => {
         }
     };
 
-    // -----------------------------
-    // Handle Google Login
-    // -----------------------------
-    const handleGoogleRegister= async () => {
-        window.location.href = "api/v1/auth/google/login";
-    };
-
     usePageTitle("Create an account");
 
     return (
@@ -79,15 +72,7 @@ export const Register: React.FC = () => {
 
                         <div className="flex flex-col space-y-5">
 
-                            <button
-                                onClick={handleGoogleRegister}
-                                disabled={loading}
-                                className="btn btn-lg text-[15px] surface-color-bg text-color font-medium rounded-lg border-gray-300 hover:bg-gray-100! btn-block mb-0 flex items-center justify-center gap-4"
-                                aria-label="Sign up with Google button"
-                            >
-                                <Google />
-                                Sign up with Google
-                            </button>
+                            <GoogleAuthButton label="Sign up with Google" disabled={loading} />
 
                             <div className="h-px divider my-6 before:bg-gray-300 after:bg-gray-300 text-gray-400">
                                 OR

@@ -166,14 +166,15 @@ describe('ForgotPassword', () => {
       renderWithProviders(<ForgotPassword />, { route: '/forgot-password' })
       await submitWithTimers(user)
 
-      expect(screen.queryByLabelText('Send another link button')).not.toBeInTheDocument()
+      expect(screen.getByLabelText('Send another link button')).toBeDisabled()
       expect(
-        screen.getByText(`request another link in ${PASSWORD_RESET_COOLDOWN_SECONDS}s`),
+        screen.getByText(`You can send another link in ${PASSWORD_RESET_COOLDOWN_SECONDS}s.`),
       ).toBeInTheDocument()
 
       await waitOutCooldown()
 
-      expect(await screen.findByLabelText('Send another link button')).toBeInTheDocument()
+      await waitFor(() => expect(screen.getByLabelText('Send another link button')).toBeEnabled())
+      expect(screen.queryByText(/you can send another link in/i)).not.toBeInTheDocument()
     })
 
     it('sends the same email again and restarts the cooldown', async () => {
@@ -194,8 +195,9 @@ describe('ForgotPassword', () => {
       await waitFor(() => expect(bodies).toHaveLength(2))
       expect(bodies[1]).toEqual({ email: 'test@example.com' })
       expect(
-        await screen.findByText(`request another link in ${PASSWORD_RESET_COOLDOWN_SECONDS}s`),
+        await screen.findByText(`You can send another link in ${PASSWORD_RESET_COOLDOWN_SECONDS}s.`),
       ).toBeInTheDocument()
+      expect(screen.getByLabelText('Send another link button')).toBeDisabled()
     })
 
     it('shows an error when sending another link fails', async () => {

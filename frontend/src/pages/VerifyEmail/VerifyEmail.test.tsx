@@ -147,12 +147,13 @@ describe('VerifyEmail', () => {
       // resends inside its cooldown anyway.
       renderWithProviders(<VerifyEmail />, { route: WITH_EMAIL })
 
-      expect(screen.queryByLabelText('Resend code button')).not.toBeInTheDocument()
-      expect(screen.getByText(`request a new code in ${OTP_RESEND_COOLDOWN_SECONDS}s`)).toBeInTheDocument()
+      expect(screen.getByLabelText('Resend code button')).toBeDisabled()
+      expect(screen.getByText(`You can send a new code in ${OTP_RESEND_COOLDOWN_SECONDS}s.`)).toBeInTheDocument()
 
       await waitOutCooldown()
 
-      expect(await screen.findByLabelText('Resend code button')).toBeInTheDocument()
+      await waitFor(() => expect(screen.getByLabelText('Resend code button')).toBeEnabled())
+      expect(screen.queryByText(/you can send a new code in/i)).not.toBeInTheDocument()
     })
 
     it('sends a new code, shows the message and restarts the cooldown', async () => {
@@ -176,7 +177,8 @@ describe('VerifyEmail', () => {
         await screen.findByText("If that account still needs verifying, we've sent a new code."),
       ).toBeInTheDocument()
       expect(body).toEqual({ email: 'test@example.com' })
-      expect(screen.queryByLabelText('Resend code button')).not.toBeInTheDocument()
+      expect(screen.getByLabelText('Resend code button')).toBeDisabled()
+      expect(screen.getByText(`You can send a new code in ${OTP_RESEND_COOLDOWN_SECONDS}s.`)).toBeInTheDocument()
     })
 
     it('shows an error when the resend fails', async () => {

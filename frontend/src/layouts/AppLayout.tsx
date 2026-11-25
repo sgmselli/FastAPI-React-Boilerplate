@@ -41,7 +41,7 @@ const SidebarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =
             </div>
         </Link>
 
-        <nav aria-label="Documentation" className="mt-8 flex-1 flex flex-col gap-1 overflow-y-auto">
+        <nav aria-label="Documentation" className="mt-4 pt-2 border-t border-gray-200 flex-1 flex flex-col gap-1 overflow-y-auto">
             <StepLinks onNavigate={onNavigate} />
         </nav>
 
