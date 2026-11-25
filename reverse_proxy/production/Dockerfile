@@ -1,5 +1,5 @@
 
-FROM nginx:1.29.0-alpine
+FROM nginx:1.31.9-alpine
 
 COPY ./web_server/default.conf /etc/nginx/conf.d/default.conf
 
