@@ -42,8 +42,7 @@ export const GoogleOAuth: React.FC = () => (
             </List>
             <p>
                 Before going live, add links to your privacy policy and terms and conditions under <strong>Branding</strong>.
-                People who sign up with Google never see the policies checkbox on the sign up page, so this is where they
-                see them.
+                The next step, <strong>Legal pages</strong>, covers updating them and which links to add.
             </p>
         </Section>
 
