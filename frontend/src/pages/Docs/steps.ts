@@ -4,6 +4,7 @@ import { GettingStarted } from "./content/GettingStarted";
 import { DatabaseMigrations } from "./content/DatabaseMigrations";
 import { EmailDelivery } from "./content/EmailDelivery";
 import { GoogleOAuth } from "./content/GoogleOAuth";
+import { LegalPages } from "./content/LegalPages";
 import { FileStorage } from "./content/FileStorage";
 import { GoogleAnalytics } from "./content/GoogleAnalytics";
 import { DigitalOceanAccount } from "./content/DigitalOceanAccount";
@@ -48,6 +49,12 @@ export const docsSteps: DocsStepDefinition[] = [
         title: "Google OAuth",
         subtitle: "Let people sign in with their Google account.",
         content: GoogleOAuth,
+    },
+    {
+        slug: "legal-pages",
+        title: "Legal pages",
+        subtitle: "Make the privacy policy and terms your own, and link them in Google sign in.",
+        content: LegalPages,
     },
     {
         slug: "file-storage",
