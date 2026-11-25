@@ -3,7 +3,6 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 
 import { Logo } from "../components/Logo";
-import { CompleteProfileBanner } from "../components/CompleteProfileBanner/CompleteProfileBanner";
 import { SidebarUserMenu } from "../components/SidebarUserMenu/SidebarUserMenu";
 import { docsPath, docsSteps, firstDocsPath } from "../pages/Docs/steps";
 
@@ -79,8 +78,6 @@ export const AppLayout: React.FC = () => {
             )}
 
             <div className="flex-1 min-w-0 flex flex-col">
-                <CompleteProfileBanner />
-
                 <header className="lg:hidden flex items-center gap-2 px-4 py-4 border-b border-gray-200">
                     <button
                         onClick={() => setMenuOpen(true)}

@@ -3,7 +3,6 @@ import { CodeBlock } from "../../../components/Docs/CodeBlock"
 import { InlineCode } from "../../../components/Docs/InlineCode"
 import { List } from "../../../components/Docs/List"
 import { Section } from "../../../components/Docs/Section"
-import { Table } from "../../../components/Docs/Table"
 
 const ENV = `BUCKET_NAME=my-app-uploads
 BUCKET_REGION=lon1
@@ -11,16 +10,28 @@ BUCKET_ENDPOINT_URL=https://lon1.digitaloceanspaces.com
 BUCKET_ACCESS_KEY_ID=your-access-key-id
 BUCKET_SECRET_KEY=your-secret-key`
 
+const CHECK = `docker compose -f compose/docker-compose.yml exec backend python -c "
+import asyncio
+from app.external_services.s3_client import get_s3_client
+
+async def main():
+    client = get_s3_client()
+    await client.upload_fileobj('checks/hello.txt', b'hello', 'text/plain')
+    print(client.generate_presigned_url('checks/hello.txt', expires_in=300))
+
+asyncio.run(main())
+"`
+
 export const FileStorage: React.FC = () => (
     <>
         <Section>
             <p>
-                Uploaded files, like profile pictures, are stored in S3-compatible object storage. This guide uses
-                DigitalOcean Spaces, but AWS S3 and MinIO work with the same code.
+                The backend can store files in S3-compatible object storage, ready for any feature that needs it. This
+                guide uses DigitalOcean Spaces, but AWS S3 and MinIO work with the same code.
             </p>
             <p>
-                The bucket stays private. Uploads go through the backend, which checks and resizes images before storing
-                them. To show a file, the backend hands the browser a short-lived signed link instead of a public URL.
+                The bucket stays private. Uploads go through the backend, which can check a file before storing it. To show
+                a file, the backend hands the browser a short-lived signed link instead of a public URL.
             </p>
             <p>
                 You'll need a DigitalOcean account. If you don't have one yet, create it as described in
@@ -60,26 +71,22 @@ export const FileStorage: React.FC = () => (
         </Section>
 
         <Section title="4. Test it">
+            <p>Upload a test file and print a signed link to it from the backend container:</p>
+            <CodeBlock code={CHECK} />
             <p>
-                Go to <strong>Settings</strong>, upload a profile picture, and check it appears. To confirm the bucket is
-                private, open a file's plain URL in your browser. It should say <strong>Access Denied</strong>.
+                Open the printed link and you should see <InlineCode>hello</InlineCode>. To confirm the bucket is private,
+                open the same link without everything after the <InlineCode>?</InlineCode>. It should
+                say <strong>Access Denied</strong>. Delete <InlineCode>checks/hello.txt</InlineCode> from the bucket in the
+                control panel when you're done.
             </p>
         </Section>
 
         <Section title="Things worth knowing">
-            <Table
-                headings={["Limit", "Default"]}
-                rows={[
-                    ["Largest upload", "5MB"],
-                    ["Accepted formats", "JPEG, PNG, WebP, HEIC and AVIF"],
-                    ["Stored size", "512×512 WebP, with metadata like location removed"],
-                    ["Signed link lifetime", "1 hour"],
-                ]}
-            />
             <List>
-                <li>The limits live in <InlineCode>backend/app/core/settings/base.py</InlineCode>. If you raise the upload size, raise <InlineCode>client_max_body_size</InlineCode> in both nginx configs too.</li>
+                <li>Use <InlineCode>S3Client</InlineCode> from <InlineCode>backend/app/external_services/s3_client.py</InlineCode> for uploads, deletes and signed links.</li>
+                <li>Store each file's key in the database, never its URL, and sign a fresh link when you return it.</li>
+                <li>nginx rejects request bodies over 1MB by default. If a feature accepts larger uploads, raise <InlineCode>client_max_body_size</InlineCode> for that endpoint in both nginx configs.</li>
                 <li>The bucket isn't created by Terraform, so it's managed by hand in the control panel.</li>
-                <li>Deleting an account also deletes its profile picture from the bucket.</li>
             </List>
         </Section>
     </>

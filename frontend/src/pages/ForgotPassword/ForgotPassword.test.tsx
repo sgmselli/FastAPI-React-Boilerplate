@@ -6,7 +6,8 @@ import { API_URL as API } from '../../test/constants'
 import { server } from '../../test/setup'
 import { act, renderWithProviders, screen, waitFor } from '../../test/renderWithProviders'
 import { TOO_MANY_REQUESTS_MESSAGE } from '../../utils/apiErrors'
-import { ForgotPassword, REQUEST_COOLDOWN_SECONDS } from './ForgotPassword'
+import { PASSWORD_RESET_COOLDOWN_SECONDS } from '../../hooks/useCooldown'
+import { ForgotPassword } from './ForgotPassword'
 
 const REQUEST_URL = `${API}/auth/password-reset/request`
 
@@ -146,7 +147,7 @@ describe('ForgotPassword', () => {
 
     async function waitOutCooldown() {
       // One second at a time - each tick re-renders and schedules the next
-      for (let second = 0; second < REQUEST_COOLDOWN_SECONDS; second++) {
+      for (let second = 0; second < PASSWORD_RESET_COOLDOWN_SECONDS; second++) {
         await act(async () => {
           vi.advanceTimersByTime(1000)
         })
@@ -167,7 +168,7 @@ describe('ForgotPassword', () => {
 
       expect(screen.queryByLabelText('Send another link button')).not.toBeInTheDocument()
       expect(
-        screen.getByText(`request another link in ${REQUEST_COOLDOWN_SECONDS}s`),
+        screen.getByText(`request another link in ${PASSWORD_RESET_COOLDOWN_SECONDS}s`),
       ).toBeInTheDocument()
 
       await waitOutCooldown()
@@ -193,7 +194,7 @@ describe('ForgotPassword', () => {
       await waitFor(() => expect(bodies).toHaveLength(2))
       expect(bodies[1]).toEqual({ email: 'test@example.com' })
       expect(
-        await screen.findByText(`request another link in ${REQUEST_COOLDOWN_SECONDS}s`),
+        await screen.findByText(`request another link in ${PASSWORD_RESET_COOLDOWN_SECONDS}s`),
       ).toBeInTheDocument()
     })
 

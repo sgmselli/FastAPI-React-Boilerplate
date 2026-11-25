@@ -102,16 +102,13 @@ async def client(db_session: AsyncSession):
 
 
 @pytest.fixture
-def s3_client(client: AsyncClient, monkeypatch):
+def s3_client(client: AsyncClient):
     """
     Mock S3Client for requests made through `client`, so no test touches a real
-    bucket. Services get the client through DI, but the response schema looks it
-    up directly to sign URLs, so both are replaced. Depends on `client`, whose
-    teardown clears every dependency override.
+    bucket. Depends on `client`, whose teardown clears every dependency override.
     """
     mock = make_mock_s3_client()
     app.dependency_overrides[get_s3_client] = lambda: mock
-    monkeypatch.setattr("app.schema.user_profile.get_s3_client", lambda: mock)
     return mock
 
 

@@ -1,14 +1,15 @@
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { Route, Routes } from 'react-router-dom'
 
 import AuthorizedRoute from '../../components/ProtectedRoutes/AuthorizedRoute'
 import { useAuth } from '../../contexts/auth'
 import { API_URL as API } from '../../test/constants'
-import { TEST_PICTURE_URL, testUser, withProfileName, withProfilePicture } from '../../test/handlers'
+import { testUser, withProfileName } from '../../test/handlers'
 import { server } from '../../test/setup'
-import { renderWithProviders, screen, waitFor, within } from '../../test/renderWithProviders'
+import { act, renderWithProviders, screen, waitFor, within } from '../../test/renderWithProviders'
+import { PASSWORD_RESET_COOLDOWN_SECONDS } from '../../hooks/useCooldown'
 import { Settings } from './Settings'
 
 const UPDATE_URL = `${API}/profile/current`
@@ -70,26 +71,6 @@ describe('Settings page', () => {
 })
 
 describe('Profile settings', () => {
-  it('shows a success toast after uploading a profile picture', async () => {
-    await renderSettings()
-
-    await userEvent.upload(
-      screen.getByLabelText('Profile picture input'),
-      new File(['image-bytes'], 'me.png', { type: 'image/png' }),
-    )
-
-    expect(await screen.findByRole('status')).toHaveTextContent('Your profile picture has been updated.')
-  })
-
-  it('shows a success toast after removing the profile picture', async () => {
-    server.use(http.get(`${API}/user/current`, () => HttpResponse.json(withProfilePicture(TEST_PICTURE_URL))))
-    await renderSettings()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Remove profile picture button' }))
-
-    expect(await screen.findByRole('status')).toHaveTextContent('Your profile picture has been removed.')
-  })
-
   it('prefills the first and last name from the current user', async () => {
     await renderSettings()
 
@@ -344,7 +325,7 @@ describe('Password settings', () => {
     expect(body).toEqual({ email: testUser.email })
   })
 
-  it('disables the button as soon as it is clicked and keeps it disabled once sent', async () => {
+  it('disables the button as soon as it is clicked', async () => {
     let release: () => void = () => {}
     server.use(
       http.post(RESET_REQUEST_URL, async () => {
@@ -365,8 +346,37 @@ describe('Password settings', () => {
 
     release()
     await screen.findByRole('status')
-    expect(changePasswordButton()).toBeDisabled()
-    expect(changePasswordButton()).toHaveClass('opacity-50')
+  })
+
+  describe('once a link is sent', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('counts down the cooldown before another link can be sent', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      await renderSettings()
+      await user.click(changePasswordButton())
+      await screen.findByRole('status')
+
+      expect(changePasswordButton()).toBeDisabled()
+      expect(changePasswordButton()).toHaveClass('opacity-50')
+      expect(changePasswordButton()).toHaveTextContent(`Send another link in ${PASSWORD_RESET_COOLDOWN_SECONDS}s`)
+
+      // One second at a time - each tick re-renders and schedules the next
+      for (let second = 0; second < PASSWORD_RESET_COOLDOWN_SECONDS; second++) {
+        await act(async () => {
+          vi.advanceTimersByTime(1000)
+        })
+      }
+
+      expect(changePasswordButton()).toBeEnabled()
+      expect(changePasswordButton()).toHaveTextContent('Send me a link')
+    })
   })
 
   it('re-enables the button if sending fails so they can try again', async () => {

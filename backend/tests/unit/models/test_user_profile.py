@@ -17,10 +17,6 @@ class TestIsProfileCompleted:
     def test_true_once_both_names_are_set(self):
         assert UserProfile(user_id=1, first_name="A", last_name="B").is_profile_completed is True
 
-    def test_true_without_a_profile_picture(self):
-        profile = UserProfile(user_id=1, first_name="A", last_name="B", profile_picture_key=None)
-        assert profile.is_profile_completed is True
-
 
 class TestUserRelationship:
     def test_assigning_profile_links_both_sides(self):

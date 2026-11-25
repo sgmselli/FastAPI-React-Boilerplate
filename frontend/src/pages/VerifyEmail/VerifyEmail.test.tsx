@@ -6,7 +6,8 @@ import { API_URL as API } from '../../test/constants'
 import { server } from '../../test/setup'
 import { testUser } from '../../test/handlers'
 import { act, renderWithProviders, screen, waitFor } from '../../test/renderWithProviders'
-import { RESEND_COOLDOWN_SECONDS, VerifyEmail } from './VerifyEmail'
+import { OTP_RESEND_COOLDOWN_SECONDS } from '../../hooks/useCooldown'
+import { VerifyEmail } from './VerifyEmail'
 
 const mockNavigate = vi.fn()
 
@@ -134,7 +135,7 @@ describe('VerifyEmail', () => {
 
     async function waitOutCooldown() {
       // One second at a time - each tick re-renders and schedules the next
-      for (let second = 0; second < RESEND_COOLDOWN_SECONDS; second++) {
+      for (let second = 0; second < OTP_RESEND_COOLDOWN_SECONDS; second++) {
         await act(async () => {
           vi.advanceTimersByTime(1000)
         })
@@ -147,7 +148,7 @@ describe('VerifyEmail', () => {
       renderWithProviders(<VerifyEmail />, { route: WITH_EMAIL })
 
       expect(screen.queryByLabelText('Resend code button')).not.toBeInTheDocument()
-      expect(screen.getByText(`request a new code in ${RESEND_COOLDOWN_SECONDS}s`)).toBeInTheDocument()
+      expect(screen.getByText(`request a new code in ${OTP_RESEND_COOLDOWN_SECONDS}s`)).toBeInTheDocument()
 
       await waitOutCooldown()
 

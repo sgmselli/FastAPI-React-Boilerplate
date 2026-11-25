@@ -76,7 +76,7 @@ describe('AuthCallback', () => {
       renderWithProviders(<AuthCallback />, { route: '/auth/callback' })
 
       await waitFor(() =>
-        expect(mockNavigate).toHaveBeenCalledWith('/complete-profile', {
+        expect(mockNavigate).toHaveBeenCalledWith('/complete-profile/name', {
           replace: true,
           state: { returnTo: '/privacy-policy', suggestedFirstName: null, suggestedLastName: null },
         }),
@@ -88,7 +88,7 @@ describe('AuthCallback', () => {
       renderWithProviders(<AuthCallback />, { route: '/auth/callback#first_name=Jane&last_name=O%27Brien' })
 
       await waitFor(() =>
-        expect(mockNavigate).toHaveBeenCalledWith('/complete-profile', {
+        expect(mockNavigate).toHaveBeenCalledWith('/complete-profile/name', {
           replace: true,
           state: { returnTo: '/docs/getting-started', suggestedFirstName: 'Jane', suggestedLastName: "O'Brien" },
         }),
@@ -99,7 +99,7 @@ describe('AuthCallback', () => {
       renderWithProviders(<AuthCallback />, { route: '/auth/callback' })
 
       await waitFor(() =>
-        expect(mockNavigate).toHaveBeenCalledWith('/complete-profile', {
+        expect(mockNavigate).toHaveBeenCalledWith('/complete-profile/name', {
           replace: true,
           state: { returnTo: '/docs/getting-started', suggestedFirstName: null, suggestedLastName: null },
         }),

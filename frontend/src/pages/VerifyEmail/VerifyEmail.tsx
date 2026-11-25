@@ -5,11 +5,9 @@ import { resendOtp } from "../../api/otp";
 import { useAuth } from "../../contexts/auth";
 import { Loading } from "../../components/Loading";
 import usePageTitle from "../../hooks/usePageTitle";
-import useCooldown from "../../hooks/useCooldown";
+import useCooldown, { OTP_RESEND_COOLDOWN_SECONDS } from "../../hooks/useCooldown";
 import { parseApiError } from "../../utils/apiErrors";
 
-// Mirrors otp_resend_cooldown_seconds on the backend, which ignores resends inside it
-export const RESEND_COOLDOWN_SECONDS = 60;
 const CODE_LENGTH = 6;
 
 export const VerifyEmail: React.FC = () => {
@@ -28,7 +26,7 @@ export const VerifyEmail: React.FC = () => {
     const [resending, setResending] = useState<boolean>(false);
     const [resendMessage, setResendMessage] = useState<string | null>(null);
     // A code was sent just before arriving here, so the cooldown starts straight away
-    const { secondsLeft: secondsUntilResend, start: startResendCooldown } = useCooldown(RESEND_COOLDOWN_SECONDS, true);
+    const { secondsLeft: secondsUntilResend, start: startResendCooldown } = useCooldown(OTP_RESEND_COOLDOWN_SECONDS, true);
 
     const { verifyEmail } = useAuth();
 

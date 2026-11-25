@@ -42,22 +42,15 @@ export async function verifyEmail(page: Page, code = TEST_OTP_CODE) {
 }
 
 /**
- * A new account lands on the optional complete profile page - fill in the
- * name and carry on, or skip it.
+ * A new account must complete its profile by filling in its name.
  */
 export async function completeProfile(page: Page, name: string) {
-  await page.waitForURL('**/complete-profile');
+  await page.waitForURL('**/complete-profile/name');
 
   const [firstName, lastName] = name.split(' ');
   await page.getByRole('textbox', { name: /First name input/i }).fill(firstName);
   await page.getByRole('textbox', { name: /Last name input/i }).fill(lastName);
-  await page.getByRole('button', { name: /Save profile button/i }).click();
-}
-
-export async function skipProfile(page: Page) {
-  await page.waitForURL('**/complete-profile');
-
-  await page.getByRole('button', { name: /Skip profile button/i }).click();
+  await page.getByRole('button', { name: 'Complete button' }).click();
 }
 
 export async function loginUser(

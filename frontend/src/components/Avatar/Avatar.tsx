@@ -1,25 +1,25 @@
-import { useState } from "react";
-
-export const DEFAULT_AVATAR_SRC = "/images/default-avatar.svg";
-
 interface AvatarProps {
-    src: string | null;
-    alt?: string;
+    initials: string;
     className?: string;
 }
 
-export const Avatar: React.FC<AvatarProps> = ({ src, alt = "", className = "h-10 w-10" }) => {
-
-    const [failedSrc, setFailedSrc] = useState<string | null>(null);
-
-    const showDefault = !src || src === failedSrc;
-
-    return (
-        <img
-            src={showDefault ? DEFAULT_AVATAR_SRC : src}
-            alt={alt}
-            onError={() => setFailedSrc(src)}
-            className={`${className} rounded-full object-cover bg-gray-200 border border-gray-300 flex-shrink-0`}
-        />
-    );
-};
+// An SVG so the letters scale with whatever size the avatar is given
+export const Avatar: React.FC<AvatarProps> = ({ initials, className = "h-10 w-10" }) => (
+    <svg
+        viewBox="0 0 40 40"
+        aria-hidden="true"
+        className={`${className} rounded-full fastapi-color-bg flex-shrink-0`}
+    >
+        <text
+            x="50%"
+            y="50%"
+            dominantBaseline="central"
+            textAnchor="middle"
+            fontSize="15"
+            fontWeight="600"
+            fill="white"
+        >
+            {initials}
+        </text>
+    </svg>
+);

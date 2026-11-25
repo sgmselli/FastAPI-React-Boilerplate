@@ -5,12 +5,10 @@ import type { ForgotPasswordRequest } from "../../types/forgotPassword";
 import { requestPasswordReset } from "../../api/forgotPassword";
 import { Loading } from "../../components/Loading";
 import usePageTitle from "../../hooks/usePageTitle";
-import useCooldown from "../../hooks/useCooldown";
+import useCooldown, { PASSWORD_RESET_COOLDOWN_SECONDS } from "../../hooks/useCooldown";
 import { parseApiError } from "../../utils/apiErrors";
 import { normalizeEmail } from "../../utils/normalizations";
 
-// Mirrors password_reset_cooldown_seconds on the backend, which ignores requests inside it
-export const REQUEST_COOLDOWN_SECONDS = 60;
 
 export const ForgotPassword: React.FC = () => {
     // -----------------------------
@@ -24,7 +22,7 @@ export const ForgotPassword: React.FC = () => {
 
     // Tracked per email so a typo can be corrected straight away
     const [requestedEmail, setRequestedEmail] = useState<string | null>(null);
-    const { secondsLeft: secondsUntilResend, start: startResendCooldown } = useCooldown(REQUEST_COOLDOWN_SECONDS);
+    const { secondsLeft: secondsUntilResend, start: startResendCooldown } = useCooldown(PASSWORD_RESET_COOLDOWN_SECONDS);
 
     const coolingDown = secondsUntilResend > 0 && normalizeEmail(email) === requestedEmail;
 

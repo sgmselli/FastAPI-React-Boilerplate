@@ -1,44 +1,20 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { Avatar, DEFAULT_AVATAR_SRC } from './Avatar'
-
-const PICTURE_URL = 'https://bucket.test/picture.webp?signed'
+import { Avatar } from './Avatar'
 
 describe('Avatar', () => {
-  it('shows the profile picture when there is one', () => {
-    render(<Avatar src={PICTURE_URL} alt="Profile picture" />)
+  it('shows the initials on the brand colour', () => {
+    const { container } = render(<Avatar initials="JD" />)
 
-    expect(screen.getByRole('img', { name: 'Profile picture' })).toHaveAttribute('src', PICTURE_URL)
+    const avatar = container.querySelector('svg')
+    expect(avatar).toHaveTextContent('JD')
+    expect(avatar).toHaveClass('fastapi-color-bg')
   })
 
-  it('shows the default image without a picture', () => {
-    render(<Avatar src={null} alt="Profile picture" />)
+  it('is hidden from assistive technology, as the name is always shown beside it', () => {
+    const { container } = render(<Avatar initials="JD" />)
 
-    expect(screen.getByRole('img', { name: 'Profile picture' })).toHaveAttribute('src', DEFAULT_AVATAR_SRC)
-  })
-
-  it('falls back to the default image when the picture fails to load', () => {
-    render(<Avatar src={PICTURE_URL} alt="Profile picture" />)
-    const img = screen.getByRole('img', { name: 'Profile picture' })
-
-    fireEvent.error(img)
-
-    expect(img).toHaveAttribute('src', DEFAULT_AVATAR_SRC)
-  })
-
-  it('tries again when given a fresh URL after a failure', () => {
-    const { rerender } = render(<Avatar src={PICTURE_URL} alt="Profile picture" />)
-    fireEvent.error(screen.getByRole('img', { name: 'Profile picture' }))
-
-    rerender(<Avatar src={`${PICTURE_URL}&fresh`} alt="Profile picture" />)
-
-    expect(screen.getByRole('img', { name: 'Profile picture' })).toHaveAttribute('src', `${PICTURE_URL}&fresh`)
-  })
-
-  it('is decorative by default', () => {
-    render(<Avatar src={null} />)
-
-    expect(screen.getByRole('presentation')).toHaveAttribute('alt', '')
+    expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
   })
 })

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { LogOut, Settings } from "lucide-react";
 
 import { Avatar } from "../Avatar/Avatar";
+import { getInitials } from "../../utils/initials";
 import { useAuth } from "../../contexts/auth";
 
 const items = [
@@ -71,7 +72,7 @@ export const SidebarUserMenu: React.FC<{ onNavigate?: () => void }> = ({ onNavig
                 aria-label="Account menu"
                 className="w-full flex items-center gap-3 px-3 py-1 rounded-lg text-color cursor-pointer hover:bg-gray-200/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"
             >
-                <Avatar src={user.profile.profile_picture_url} className="h-6 w-6" />
+                <Avatar initials={getInitials(user)} className="h-6 w-6" />
                 <span className="flex-1 min-w-0 truncate text-left text-sm font-medium">{user.display_name}</span>
             </button>
         </div>

@@ -6,7 +6,7 @@ import { Avatar } from "../Avatar/Avatar";
 
 interface UserMenuProps {
     name: string;
-    pictureUrl: string | null;
+    initials: string;
 }
 
 const items = [
@@ -15,7 +15,7 @@ const items = [
     { label: "Logout", to: "/logout", icon: LogOut },
 ];
 
-export const UserMenu: React.FC<UserMenuProps> = ({ name, pictureUrl }) => {
+export const UserMenu: React.FC<UserMenuProps> = ({ name, initials }) => {
 
     const [open, setOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -36,7 +36,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ name, pictureUrl }) => {
                 onClick={() => setOpen((prev) => !prev)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-color cursor-pointer hover:bg-gray-200/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"
             >
-                <Avatar src={pictureUrl} className="h-7 w-7 sm:mr-1.5" />
+                <Avatar initials={initials} className="h-7 w-7 sm:mr-1.5" />
                 <span className="max-sm:sr-only whitespace-nowrap">{name}</span>
                 <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
             </button>
